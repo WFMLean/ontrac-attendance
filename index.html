@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OnTrac Attendance Console</title>
+<style>
+:root{
+  --bg:#0A111F; --bg2:#0D1627; --card:#121C2E; --card2:#172338; --line:#22304A; --line2:#2C3C5A;
+  --tx:#E6ECF5; --tx2:#AEB9CC; --mut:#7F8BA3;
+  --red:#E23744; --cyan:#4EC9F5; --green:#3FCE8B; --amber:#F5B841;
+  --s-pto:#3987e5; --s-per:#d95926; --s-med:#199e70; --s-ncns:#c98500; --s-late:#d55181; --s-lwop:#9085e9;
+  --present:#1F4434; --off:#0E1626; --future:#182540;
+  --mono:"Courier New",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--tx);font:14px/1.45 Arial,Helvetica,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--cyan)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.muted{color:var(--mut)} .tx2{color:var(--tx2)}
+.hidden{display:none!important}
+/* ---------- buttons & inputs ---------- */
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:var(--card2);padding:7px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;font-size:13px}
+.btn:hover{border-color:var(--cyan)}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.good{background:#16392B;border-color:var(--green);color:var(--green);font-weight:700}
+.btn.bad{background:#3A1820;border-color:var(--red);color:#ff8a93;font-weight:700}
+.btn.ghost{background:transparent}
+.btn.sm{padding:4px 8px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.inp,select.inp,textarea.inp{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:7px 10px;min-width:0}
+.inp:focus{border-color:var(--cyan);outline:none}
+textarea.inp{width:100%;resize:vertical;min-height:64px}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--tx2)}
+label.fld>span{font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--mut)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.spacer{flex:1}
+/* ---------- pills ---------- */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-family:var(--mono);border:1px solid var(--line2);background:var(--bg2);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--mut)}
+.pill.ok{color:var(--green);border-color:#2b6b50}.pill.ok .dot{background:var(--green)}
+.pill.warn{color:var(--amber);border-color:#7a5d1f}.pill.warn .dot{background:var(--amber)}
+.pill.err{color:#ff8a93;border-color:#7a2a33}.pill.err .dot{background:var(--red)}
+.pill.info{color:var(--cyan);border-color:#235a72}.pill.info .dot{background:var(--cyan)}
+.tag{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono);letter-spacing:.03em}
+/* ---------- layout ---------- */
+#app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:56px 1fr;min-height:100vh}
+header.top{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#0C1526,#0A111F);position:sticky;top:0;z-index:30}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em}
+.brand .logo{width:30px;height:30px;border-radius:7px;background:var(--red);display:grid;place-items:center;font-family:var(--mono);font-weight:700;color:#fff;font-size:13px}
+.brand small{display:block;font-weight:400;color:var(--mut);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.userchip{display:flex;align-items:center;gap:8px;font-size:12px}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--card2);border:1px solid var(--line2);display:grid;place-items:center;font-weight:700;font-size:11px;color:var(--cyan)}
+nav.side{border-right:1px solid var(--line);background:var(--bg2);padding:14px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:56px;height:calc(100vh - 56px);overflow:auto}
+nav.side button{display:flex;align-items:center;gap:10px;background:none;border:0;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--tx2);text-align:left;font-size:14px}
+nav.side button:hover{background:var(--card)}
+nav.side button.on{background:var(--card2);color:#fff;box-shadow:inset 3px 0 0 var(--red)}
+nav.side .ico{width:18px;text-align:center;font-family:var(--mono);color:var(--cyan)}
+nav.side .badge{margin-left:auto;background:var(--red);color:#fff;border-radius:999px;font-size:11px;padding:0 7px;font-weight:700}
+nav.side .sect{font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.14em;text-transform:uppercase;margin:12px 12px 4px}
+main{padding:20px 22px 60px;min-width:0}
+.pagehead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.pagehead h1{margin:0;font-size:22px;letter-spacing:.01em}
+.pagehead p{margin:2px 0 0;color:var(--mut);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card h3{margin:0 0 2px;font-size:14px;letter-spacing:.02em}
+.card .sub{color:var(--mut);font-size:12px;margin-bottom:12px}
+.cardhead{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.cardhead>div:first-child{flex:1;min-width:0}
+.dgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c7{grid-column:span 7}.c6{grid-column:span 6}.c5{grid-column:span 5}.c4{grid-column:span 4}
+/* ---------- filter bar ---------- */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;position:sticky;top:56px;z-index:20}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:var(--bg2)}
+.seg button{border:0;background:none;padding:6px 10px;cursor:pointer;font-size:12px;color:var(--tx2);border-right:1px solid var(--line2)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--card2);color:#fff;box-shadow:inset 0 -2px 0 var(--cyan)}
+/* ---------- KPI tiles ---------- */
+.kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;position:relative;overflow:hidden}
+.kpi .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);display:flex;gap:6px;align-items:center}
+.kpi .val{font-size:26px;font-weight:700;margin:6px 0 2px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .cmp{font-size:11.5px;color:var(--tx2);display:flex;gap:6px;align-items:center}
+.kpi .bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line2)}
+.kpi.good .bar{background:var(--green)}.kpi.warn .bar{background:var(--amber)}.kpi.bad .bar{background:var(--red)}
+.st-good{color:var(--green)}.st-warn{color:var(--amber)}.st-bad{color:#ff6b75}
+.info-i{cursor:help;border:1px solid var(--line2);border-radius:50%;width:14px;height:14px;display:inline-grid;place-items:center;font-size:9px;color:var(--mut)}
+/* ---------- alert band ---------- */
+.band{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid #7a5d1f;background:#21190A;border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:13px}
+.band.ok{border-color:#2b6b50;background:#0E2219}
+/* ---------- tables ---------- */
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:8px}
+table.tbl{border-collapse:collapse;width:100%;font-size:13px}
+.tbl th{position:sticky;top:0;background:var(--card2);text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);padding:8px 10px;border-bottom:1px solid var(--line2);white-space:nowrap;z-index:1}
+.tbl th.sortable{cursor:pointer}.tbl th.sortable:hover{color:var(--tx)}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:hover td{background:#152038}
+.tbl td.num,.tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tfoot td{font-weight:700;background:var(--card2);position:sticky;bottom:0}
+.tbl tr.click{cursor:pointer}
+/* ---------- heatmap ---------- */
+.hm-wrap{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:8px}
+table.hm{border-collapse:separate;border-spacing:2px;font-size:11px}
+.hm th{position:sticky;top:0;background:var(--card);font-family:var(--mono);font-weight:400;color:var(--mut);padding:3px 2px;z-index:2;font-size:10px;min-width:26px}
+.hm th.we{color:var(--tx2)}
+.hm td.nm{position:sticky;left:0;background:var(--card);z-index:1;white-space:nowrap;padding:0 8px 0 2px;max-width:210px;overflow:hidden;text-overflow:ellipsis;color:var(--tx2)}
+.hm th.nm{left:0;z-index:3;text-align:left}
+.hm .c{width:26px;height:20px;border-radius:4px;text-align:center;font-family:var(--mono);font-size:9.5px;line-height:20px;font-weight:700;color:#fff;cursor:pointer}
+.c.off{background:var(--off);color:transparent;cursor:default}
+.c.present{background:var(--present);color:#7fd8ad}
+.c.future{background:var(--future);color:transparent}
+.c.unset{background:transparent;box-shadow:inset 0 0 0 1px #7a2a33;color:#ff8a93}
+.c.PTO{background:var(--s-pto)}.c.LWOP{background:var(--s-lwop)}.c.PERSONAL{background:var(--s-per)}.c.MEDICAL{background:var(--s-med)}.c.NCNS{background:var(--s-ncns)}.c.LATE,.c.UNDERTIME{background:var(--s-late)}
+.c.req{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 2px,transparent 2px 6px)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--tx2);align-items:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+/* ---------- charts ---------- */
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{fill:var(--mut);font-size:10.5px;font-family:Arial,sans-serif}
+.chart .grid line{stroke:#1D2A42;stroke-width:1}
+.chart .axis line{stroke:var(--line2)}
+.chart .hit{fill:transparent;cursor:crosshair}
+.chart .tline{stroke:var(--amber);stroke-width:1.5;stroke-dasharray:5 4}
+.chart .tlabel{fill:var(--amber);font-family:var(--mono);font-size:10px}
+#tip{position:fixed;pointer-events:none;z-index:200;background:#0B1424;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:280px;display:none}
+#tip .t{font-weight:700;margin-bottom:4px}
+#tip .r{display:flex;gap:8px;align-items:center;justify-content:space-between}
+#tip .r i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px}
+#tip .r b{font-variant-numeric:tabular-nums}
+/* ---------- attendance tagging ---------- */
+.att-row{display:grid;grid-template-columns:minmax(180px,1.3fr) 130px minmax(330px,2.4fr) minmax(140px,1fr);gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line)}
+.att-row:hover{background:#142036}
+.att-row.dirty{box-shadow:inset 3px 0 0 var(--cyan)}
+.att-row .nm{font-weight:700;font-size:13px}
+.att-row .meta{font-size:11.5px;color:var(--mut)}
+.stbtns{display:flex;flex-wrap:wrap;gap:4px}
+.stbtns button{border:1px solid var(--line2);background:var(--bg2);border-radius:6px;padding:4px 7px;font-size:11.5px;cursor:pointer;color:var(--tx2)}
+.stbtns button:hover{border-color:var(--cyan)}
+.stbtns button.on{color:#fff;font-weight:700;border-color:transparent}
+.stbtns button.on[data-s=PRESENT]{background:#23704E}
+.stbtns button.on[data-s=LATE],.stbtns button.on[data-s=UNDERTIME]{background:var(--s-late)}
+.stbtns button.on[data-s=PTO]{background:var(--s-pto)}.stbtns button.on[data-s=LWOP]{background:var(--s-lwop)}
+.stbtns button.on[data-s=PERSONAL]{background:var(--s-per)}.stbtns button.on[data-s=MEDICAL]{background:var(--s-med)}.stbtns button.on[data-s=NCNS]{background:var(--s-ncns)}
+.minsin{width:70px}
+.savebar{position:sticky;bottom:12px;display:flex;gap:10px;align-items:center;background:#0F1A2E;border:1px solid var(--cyan);border-radius:var(--r);padding:10px 14px;margin-top:12px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:15}
+/* ---------- schedule grid ---------- */
+.sg td.sc{font-family:var(--mono);font-size:11.5px;white-space:nowrap;text-align:center}
+.sg td.sc.off{color:var(--mut);background:#0E1626}
+.sg td.sc.ovr{box-shadow:inset 0 0 0 1px var(--cyan);color:var(--cyan)}
+.sg td.sc.lv{background:#14294A;color:#9cc4f5}
+.sg td.sc.edit{cursor:pointer}
+/* ---------- requests ---------- */
+.req{border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:14px;margin-bottom:12px}
+.req .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.req .hd b{font-size:14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px}
+.kv dt{color:var(--mut);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.kv dd{margin:0}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tabs button{background:none;border:0;padding:9px 14px;cursor:pointer;color:var(--tx2);border-bottom:2px solid transparent;font-size:13.5px}
+.tabs button.on{color:#fff;border-bottom-color:var(--red);font-weight:700}
+.preview{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:12px;font-size:12.5px}
+.ba{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.ba .box{background:var(--card2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:12px}
+.ba .arrow{color:var(--cyan);font-family:var(--mono)}
+/* ---------- modal & toast ---------- */
+.mbg{position:fixed;inset:0;background:rgba(3,7,15,.72);display:grid;place-items:center;z-index:100;padding:16px}
+.modal{background:var(--card);border:1px solid var(--line2);border-radius:12px;width:min(640px,100%);max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal .mh{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:2}
+.modal .mh h3{margin:0;font-size:16px;flex:1}
+.modal .mb{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.modal .mf{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--card)}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:300}
+.toast{background:#0F1A2E;border:1px solid var(--line2);border-left:3px solid var(--cyan);padding:10px 14px;border-radius:8px;font-size:13px;max-width:360px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.toast.ok{border-left-color:var(--green)}.toast.err{border-left-color:var(--red)}
+/* ---------- auth ---------- */
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(1200px 600px at 20% -10%,#14223D 0,transparent 60%),var(--bg)}
+.auth .box{width:min(460px,100%);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px}
+.auth h2{margin:14px 0 4px;font-size:20px}
+.demo-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
+.demo-list button{display:flex;gap:10px;align-items:center;text-align:left;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:9px 12px;cursor:pointer}
+.demo-list button:hover{border-color:var(--cyan)}
+.empty{padding:28px;text-align:center;color:var(--mut);border:1px dashed var(--line2);border-radius:var(--r)}
+.empty b{display:block;color:var(--tx);margin-bottom:6px;font-size:14px}
+.note{font-size:12px;color:var(--mut)}
+.warnbox{border:1px solid #7a5d1f;background:#21190A;color:#F5D58A;border-radius:8px;padding:9px 12px;font-size:12.5px}
+.errbox{border:1px solid #7a2a33;background:#2A0F15;color:#ffb3b9;border-radius:8px;padding:9px 12px;font-size:12.5px}
+.okbox{border:1px solid #2b6b50;background:#0E2219;color:#9be7c3;border-radius:8px;padding:9px 12px;font-size:12.5px}
+/* ---------- responsive ---------- */
+@media (max-width:1280px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media (max-width:1080px){.kpis.k5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1080px){.c8,.c7,.c6,.c5,.c4{grid-column:span 12}.att-row{grid-template-columns:1fr 1fr}.att-row .stbtns{grid-column:1/-1}}
+@media (max-width:820px){
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:56px auto 1fr}
+  .seg{flex-wrap:wrap;max-width:100%}
+  .filters .fld{max-width:100%}
+  header.top .pill{padding:3px 7px;font-size:9.5px;letter-spacing:.02em}
+  nav.side{position:sticky;top:56px;height:auto;flex-direction:row;overflow-x:auto;padding:6px;border-right:0;border-bottom:1px solid var(--line);z-index:25}
+  nav.side .sect{display:none}
+  nav.side button{flex:0 0 auto;padding:8px 10px;font-size:13px}
+  nav.side button.on{box-shadow:inset 0 -3px 0 var(--red)}
+  main{padding:14px 16px 60px}
+  .filters{position:static}
+  .kpis,.kpis.k5{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .userchip .uname,.brand small,.hide-sm{display:none}
+  header.top{gap:8px;padding:0 12px}
+  .att-row{grid-template-columns:1fr}
+}
+@media (max-width:480px){.brand>div:last-child{display:none}#signout{padding:4px 6px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="tip"></div>
+<div id="toasts"></div>
+
+<script>
+/* =====================================================================
+   OnTrac Attendance Console — single-file app
+   CONFIG: paste the Database project URL + public (anon) key below to go
+   live. While they hold the placeholder values the app runs in DEMO mode
+   (data stays in this browser). An Admin can also connect at runtime in
+   Admin → Data. The public key is safe to ship ONLY because row-level
+   security in ontrac_attendance_schema.sql enforces every permission.
+   ===================================================================== */
+const CONFIG = {
+  DB_URL: 'https://xrzpbkilkswyflzagcfw.supabase.co',          // e.g. https://abcd1234.supabase.co
+  DB_KEY: 'sb_publishable_rSCf1L6KRfyoE6cwrdctsQ_HZepINkD',
+  DB_LIB: 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+  XLSX_LIB: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  APP_VERSION: '1.0.0'
+};
+const SEED = null;
+
+/* ---------------- utilities ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+const uid = p => p + '-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+const pct = (v, d = 1) => v == null || isNaN(v) ? '—' : (v * 100).toFixed(d) + '%';
+const num = (v, d = 1) => v == null || isNaN(v) ? '—' : (+v).toLocaleString('en-US', {maximumFractionDigits: d, minimumFractionDigits: d});
+const int = v => v == null || isNaN(v) ? '—' : Math.round(v).toLocaleString('en-US');
+const initials = n => String(n || '?').replace(/,.*/, m => ' ' + m.slice(1)).trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+const properCase = s => String(s || '').split(/\s+/).filter(Boolean).map(w => /^(II|III|IV|V|VI)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+const shortName = n => { const [last, first] = String(n || '').split(','); return first ? properCase(first.trim().split(/\s+/)[0] + ' ' + last.trim()) : properCase(n); };
+const teamLabel = t => (t && t.trim()) ? shortName(t) : 'Unassigned';
+const D = {
+  parse(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); },
+  iso(dt) { return dt.toISOString().slice(0, 10); },
+  add(iso, n) { const d = D.parse(iso); d.setUTCDate(d.getUTCDate() + n); return D.iso(d); },
+  diff(a, b) { return Math.round((D.parse(b) - D.parse(a)) / 864e5); },
+  today() { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; },
+  dowIdx(iso) { return (D.parse(iso).getUTCDay() + 1) % 7; },            // Sat = 0 … Fri = 6
+  weekStart(iso) { return D.add(iso, -D.dowIdx(iso)); },
+  range(a, b) { const o = []; if (!a || !b || a > b) return o; for (let x = a; x <= b; x = D.add(x, 1)) o.push(x); return o; },
+  fmt(iso, o = {weekday: 'short', month: 'short', day: 'numeric'}) { return iso ? D.parse(iso).toLocaleDateString('en-US', {...o, timeZone: 'UTC'}) : '—'; },
+  md(iso) { return D.fmt(iso, {month: 'short', day: 'numeric'}); },
+  dname(iso) { return D.fmt(iso, {weekday: 'short'}); },
+  monthStart(iso) { return iso.slice(0, 8) + '01'; },
+  monthEnd(iso) { const d = D.parse(D.monthStart(iso)); d.setUTCMonth(d.getUTCMonth() + 1); d.setUTCDate(0); return D.iso(d); }
+};
+const DAYS = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+let TODAY = D.today();
+
+/* ---------------- shifts ---------------- */
+const SH_RE = /^(\d{1,2}):(\d{2})\s*([AP]M)\s*[-–—]\s*(\d{1,2}):(\d{2})\s*([AP]M)$/i;
+const _shCache = new Map();
+function parseShift(s) {
+  if (!s) return null;
+  if (_shCache.has(s)) return _shCache.get(s);
+  let r = null;
+  const t = String(s).trim().replace(/\s+/g, ' ');
+  if (!/^off$/i.test(t)) {
+    const m = t.match(SH_RE);
+    if (m) {
+      const tm = (h, mi, ap) => ((+h % 12) + (ap.toUpperCase() === 'PM' ? 12 : 0)) * 60 + +mi;
+      let a = tm(m[1], m[2], m[3]), b = tm(m[4], m[5], m[6]);
+      if (b <= a) b += 1440;
+      r = {start: a, end: b, span: (b - a) / 60};
+    }
+  }
+  _shCache.set(s, r);
+  return r;
+}
+function normShift(s) {
+  const t = String(s || '').trim().replace(/\s+/g, ' ');
+  if (!t) return '';
+  if (/^off$/i.test(t)) return 'OFF';
+  const m = t.match(SH_RE);
+  if (!m) return t;
+  return `${+m[1]}:${m[2]} ${m[3].toUpperCase()} - ${+m[4]}:${m[5]} ${m[6].toUpperCase()}`;
+}
+function paidHrs(s) { const p = parseShift(s); if (!p) return 0; const meal = p.span > 5 ? +S.settings.mealHrs || 0 : 0; return Math.max(0, Math.round((p.span - meal) * 100) / 100); }
+function shortShift(s) {
+  const p = parseShift(s); if (!p) return s && /^off$/i.test(s.trim()) ? 'OFF' : (s || '—');
+  const f = m => { m %= 1440; let h = Math.floor(m / 60), mi = m % 60; const ap = h >= 12 ? 'p' : 'a'; h = h % 12 || 12; return h + (mi ? ':' + String(mi).padStart(2, '0') : '') + ap; };
+  return f(p.start) + '–' + f(p.end);
+}
+
+/* ---------------- statuses ---------------- */
+const ST = {
+  PRESENT:   {label: 'Present',   code: 'P',  cat: 'none'},
+  LATE:      {label: 'Late',      code: 'L',  cat: 'unplanned', mins: true},
+  UNDERTIME: {label: 'Undertime', code: 'U',  cat: 'unplanned', mins: true},
+  PTO:       {label: 'PTO',       code: 'V',  cat: 'planned'},
+  LWOP:      {label: 'LWOP',      code: 'W',  cat: 'planned'},
+  PERSONAL:  {label: 'Personal',  code: 'Pe', cat: 'unplanned'},
+  MEDICAL:   {label: 'Medical',   code: 'M',  cat: 'unplanned'},
+  NCNS:      {label: 'NCNS',      code: 'N',  cat: 'unplanned'}
+};
+const ST_ORDER = Object.keys(ST);
+/* Categorical order validated for CVD on the dark card surface: PTO, Personal, Medical, NCNS, Late/UT, LWOP */
+const CAT = [
+  {key: 'PTO',      label: 'PTO',            color: '#3987e5', st: ['PTO']},
+  {key: 'PERSONAL', label: 'Personal',       color: '#d95926', st: ['PERSONAL']},
+  {key: 'MEDICAL',  label: 'Medical',        color: '#199e70', st: ['MEDICAL']},
+  {key: 'NCNS',     label: 'NCNS',           color: '#c98500', st: ['NCNS']},
+  {key: 'LATEUT',   label: 'Late/Undertime', color: '#d55181', st: ['LATE', 'UNDERTIME']},
+  {key: 'LWOP',     label: 'LWOP',           color: '#9085e9', st: ['LWOP']}
+];
+const PRESENT_SET = new Set(['PRESENT', 'LATE', 'UNDERTIME']);
+
+/* ---------------- state ---------------- */
+const DEFAULT_SETTINGS = {
+  mealHrs: 1,            // unpaid meal deducted from shifts > 5 h
+  attTarget: 0.95,       // attendance goal
+  unplTarget: 0.05,      // unplanned shrinkage ceiling
+  planTarget: 0.08,      // planned shrinkage ceiling
+  ptoCapPct: 0.10,       // max share of scheduled HC on PTO per day
+  lockDays: 3,           // TLs can edit statuses up to N days back
+  ptoNoticeDays: 14,     // PTO filed with less notice needs Operations Manager email approval
+  omName: '',            // Operations Manager (pre-fills short-notice approvals)
+  omEmail: '',
+  goLive: '2026-10-01',  // days before this are not flagged as "not submitted"
+  allowedDomains: ['leangroup.com']
+};
+const S = {
+  mode: 'demo', user: null, sb: null, connected: false,
+  agents: [], att: {}, ovr: {}, reqs: [], settings: {...DEFAULT_SETTINGS}, profiles: [], audit: [],
+  idx: {agent: {}, leave: {}}, ver: 0,
+  view: 'dash',
+  dash: {preset: null, from: null, to: null, team: 'ALL', sme: 'ALL', gran: 'day', sort: {k: 'unplPct', d: -1}},
+  attv: {date: null, team: null, dirty: {}, showOff: false, q: ''},
+  sched: {week: null, team: 'ALL', q: ''},
+  reqv: {tab: 'pto', listFilter: 'Pending'},
+  appv: {tab: 'queue', type: 'ALL', q: ''},
+  rep: {from: null, to: null, team: 'ALL'},
+  adm: {tab: 'roster', q: ''}
+};
+const LS_DATA = 'otac_demo_v1', LS_CONN = 'otac_conn_v1', LS_DEMOUSER = 'otac_demo_user';
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const lsDel = k => { try { localStorage.removeItem(k); } catch (e) {} };
+
+/* ---------------- indexes & memo ---------------- */
+function reindex() {
+  S.idx.agent = Object.fromEntries(S.agents.map(a => [a.id, a]));
+  const lv = {};
+  for (const r of S.reqs) if (r.kind === 'PTO' && r.status === 'Approved') for (const d of (r.dates || [])) lv[d + '|' + r.agent] = r;
+  S.idx.leave = lv;
+  S.ver++; _memo.clear();
+}
+const _memo = new Map();
+function teams() {
+  const set = new Map();
+  for (const a of S.agents) if (a.active !== false) set.set(norm(a.tl), a.tl || '');
+  return [...set.entries()].sort((x, y) => (x[0] === '' ? 1 : 0) - (y[0] === '' ? 1 : 0) || x[0].localeCompare(y[0])).map(([k, v]) => ({key: k, name: v, label: teamLabel(v)}));
+}
+function smes() { return [...new Set(S.agents.filter(a => a.active !== false && a.sme).map(a => a.sme.trim()))].sort(); }
+function isRTA() { return S.user && (S.user.role === 'RTA' || S.user.role === 'ADMIN'); }
+function isAdmin() { return S.user && S.user.role === 'ADMIN'; }
+function myTeamKey() { return S.user && S.user.role === 'TL' ? norm(S.user.tl_name) : null; }
+function scopeAgents(teamKey) {
+  let list = S.agents.filter(a => a.active !== false);
+  const mine = myTeamKey();
+  if (mine !== null) list = list.filter(a => norm(a.tl) === mine);
+  else if (teamKey && teamKey !== 'ALL') list = list.filter(a => norm(a.tl) === teamKey);
+  return list.sort((a, b) => a.name.localeCompare(b.name));
+}
+function canEditAgent(a) { if (!S.user) return false; if (isRTA()) return true; return norm(a.tl) === myTeamKey() && myTeamKey() !== ''; }
+function canEditDate(iso) { if (isRTA()) return true; return iso <= TODAY && D.diff(iso, TODAY) <= (+S.settings.lockDays || 0); }
+
+/* ---------------- schedule + day facts ---------------- */
+function baseShift(a, iso) { return (a.sched || [])[D.dowIdx(iso)] || ''; }
+function shiftOf(a, iso) { const o = S.ovr[iso + '|' + a.id]; return o ? o.shift : baseShift(a, iso); }
+function dayInfo(a, iso) {
+  const key = iso + '|' + a.id;
+  const mk = S.ver + ':' + key;
+  if (_memo.has(mk)) return _memo.get(mk);
+  const shift = shiftOf(a, iso), p = parseShift(shift), working = !!p, hrs = working ? paidHrs(shift) : 0;
+  const rec = S.att[key], lv = S.idx.leave[key], ov = S.ovr[key];
+  let status = null, src = null, mins = 0;
+  if (rec) { status = rec.status; src = 'tag'; mins = +rec.mins || 0; }
+  else if (lv && working) { status = lv.subtype === 'LWOP' ? 'LWOP' : 'PTO'; src = 'request'; }
+  let lost = 0, cat = 'none';
+  if (status && working) {
+    const m = ST[status]; cat = m.cat;
+    if (m.mins) lost = Math.min(hrs, mins / 60); else if (status !== 'PRESENT') lost = hrs;
+  }
+  const state = !working ? (status ? 'offtag' : 'off') : status ? 'known' : iso > TODAY ? 'future' : iso < (S.settings.goLive || '') ? 'pre' : 'unset';
+  const r = {key, iso, agent: a, shift, working, hrs, status, src, mins, lost, cat, state, rec, lv, ov};
+  _memo.set(mk, r);
+  return r;
+}
+function catOf(status) { return CAT.find(c => c.st.includes(status)); }
+function emptyAgg() {
+  const z = {hc: 0, schedDays: 0, offDays: 0, schedHrs: 0, knownDays: 0, knownHrs: 0, unset: 0, present: 0, absentDays: 0,
+    planHrs: 0, unplHrs: 0, lateMins: 0, utMins: 0, cnt: {}, hrs: {}, catHrs: {}, catCnt: {}};
+  for (const s of ST_ORDER) { z.cnt[s] = 0; z.hrs[s] = 0; }
+  for (const c of CAT) { z.catHrs[c.key] = 0; z.catCnt[c.key] = 0; }
+  return z;
+}
+function addDay(z, i) {
+  if (!i.working) { z.offDays++; return; }
+  z.schedDays++; z.schedHrs += i.hrs;
+  if (!i.status) { if (i.state === 'unset') z.unset++; return; }
+  z.knownDays++; z.knownHrs += i.hrs; z.cnt[i.status]++; z.hrs[i.status] += i.lost;
+  const c = catOf(i.status); if (c) { z.catHrs[c.key] += i.lost; z.catCnt[c.key]++; }
+  if (i.cat === 'planned') z.planHrs += i.lost; else if (i.cat === 'unplanned') z.unplHrs += i.lost;
+  if (PRESENT_SET.has(i.status)) z.present++; else z.absentDays++;
+  if (i.status === 'LATE') z.lateMins += i.mins; if (i.status === 'UNDERTIME') z.utMins += i.mins;
+}
+function finish(z) {
+  /* Tracker logic: Attendance % = (Scheduled − Absent) ÷ Scheduled; shrinkage on scheduled paid hours.
+     Not-submitted days stay in the denominator (Submission % shows completeness). */
+  z.att = z.schedDays ? (z.schedDays - z.absentDays) / z.schedDays : null;
+  z.unplPct = z.schedHrs ? z.unplHrs / z.schedHrs : null;
+  z.planPct = z.schedHrs ? z.planHrs / z.schedHrs : null;
+  z.totPct = z.schedHrs ? (z.unplHrs + z.planHrs) / z.schedHrs : null;
+  z.subm = (z.knownDays + z.unset) ? z.knownDays / (z.knownDays + z.unset) : null;
+  z.lostHrs = z.unplHrs + z.planHrs;
+  z.workedHrs = Math.max(0, z.knownHrs - z.lostHrs);
+  z.overallAbs = z.schedDays ? z.absentDays / z.schedDays : null;
+  return z;
+}
+function aggregate(agents, dates) {
+  const z = emptyAgg(); z.hc = agents.length; z.days = dates.length;
+  for (const a of agents) for (const d of dates) addDay(z, dayInfo(a, d));
+  return finish(z);
+}
+/* Bradford factor: S² × D on unplanned absence days (Personal/Medical/NCNS); consecutive scheduled absence days = one spell */
+function bradford(a, dates) {
+  let spells = 0, days = 0, inSpell = false;
+  for (const d of dates) {
+    const i = dayInfo(a, d);
+    if (!i.working) continue;
+    const abs = i.status === 'PERSONAL' || i.status === 'MEDICAL' || i.status === 'NCNS';
+    if (abs) { days++; if (!inSpell) { spells++; inSpell = true; } } else inSpell = false;
+  }
+  return {spells, days, score: spells * spells * days};
+}
+function bfBand(s) { return s >= 400 ? ['Critical', 'bad'] : s >= 125 ? ['Concern', 'bad'] : s >= 50 ? ['Watch', 'warn'] : ['Low', 'good']; }
+
+/* ---------------- toasts, tooltip, modal ---------------- */
+function toast(msg, kind = '') {
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), kind === 'err' ? 7000 : 3800);
+}
+const tip = {
+  show(html, ev) { const el = $('#tip'); el.innerHTML = html; el.style.display = 'block'; tip.move(ev); },
+  move(ev) { const el = $('#tip'); if (el.style.display !== 'block') return; const w = el.offsetWidth, h = el.offsetHeight; let x = ev.clientX + 14, y = ev.clientY + 14; if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; el.style.left = Math.max(8, x) + 'px'; el.style.top = Math.max(8, y) + 'px'; },
+  hide() { $('#tip').style.display = 'none'; }
+};
+document.addEventListener('scroll', () => tip.hide(), true);
+function modal(title, body, buttons = [{label: 'Close'}], opts = {}) {
+  const bg = document.createElement('div'); bg.className = 'mbg';
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}" style="${opts.wide ? 'width:min(860px,100%)' : ''}"><div class="mh"><h3>${esc(title)}</h3><button class="btn ghost sm" data-x aria-label="Close">✕</button></div><div class="mb">${body}</div><div class="mf"></div></div>`;
+  const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  bg.addEventListener('mousedown', e => { if (e.target === bg) close(); });
+  $('[data-x]', bg).onclick = close;
+  const mf = $('.mf', bg);
+  for (const b of buttons) {
+    const el = document.createElement('button'); el.className = 'btn ' + (b.cls || ''); el.textContent = b.label;
+    el.onclick = async () => { if (b.onClick) { el.disabled = true; const r = await b.onClick(bg); el.disabled = false; if (r === false) return; } close(); };
+    mf.appendChild(el);
+  }
+  document.body.appendChild(bg);
+  setTimeout(() => { const f = $('input,select,textarea', $('.mb', bg)); if (f) f.focus(); }, 30);
+  return bg;
+}
+function confirmBox(title, msg, okLabel = 'Confirm', cls = 'primary') {
+  return new Promise(res => modal(title, `<div>${msg}</div>`, [{label: 'Cancel', onClick: () => res(false)}, {label: okLabel, cls, onClick: () => res(true)}]));
+}
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s); });
+}
+</script>
+
+<script>
+/* =====================================================================
+   DATA LAYER — one API, two backends (demo = this browser, live = Database)
+   Every write updates the in-memory cache first, then persists.
+   ===================================================================== */
+const TABLES = {agents: 'ot_agents', att: 'ot_attendance', ovr: 'ot_overrides', reqs: 'ot_requests', settings: 'ot_settings', profiles: 'ot_profiles', audit: 'ot_audit'};
+
+function seedPayload() {
+  const sd = SEED || {agents: [], att: [], ovr: [], reqs: []};
+  const now = new Date().toISOString();
+  const agents = sd.agents.map(a => ({id: a.id, name: a.name, tl: a.tl || '', sme: a.sme || '', active: a.active !== false, sched: a.sched}));
+  const att = sd.att.map(r => {
+    const a = agents.find(x => x.id === r.agent); const sh = a ? a.sched[D.dowIdx(r.date)] : '';
+    return {id: r.date + '|' + r.agent, date: r.date, agent: r.agent, status: r.status, mins: r.mins || 0, note: r.note || 'Imported from tracker', shift: sh, sched_hrs: 0, lost_hrs: 0, src: 'tracker', submitted_by: 'Imported from tracker', submitted_at: now};
+  });
+  const ovr = sd.ovr.map(o => ({id: o.date + '|' + o.agent, date: o.date, agent: o.agent, shift: o.shift, note: o.note, req_id: null, created_by: 'Imported from tracker', created_at: now}));
+  const ovrMap = Object.fromEntries(ovr.map(o => [o.id, o.shift]));
+  const hrsFor = q => { const a = agents.find(x => x.id === q.agent); return a ? Math.round(q.dates.reduce((s, d) => s + paidHrs(ovrMap[d + '|' + a.id] || a.sched[D.dowIdx(d)]), 0) * 100) / 100 : 0; };
+  const reqs = sd.reqs.map(q => ({id: q.id, kind: 'PTO', subtype: 'PTO', agent: q.agent, agent2: null, start_date: q.start, end_date: q.end, dates: q.dates, payload: {imported: true},
+    reason: 'Imported from tracker Leave tab', status: q.status, hours: hrsFor(q), submitted_by: 'Imported from tracker', submitted_at: now,
+    reviewed_by: q.status === 'Pending' ? null : 'Imported from tracker', reviewed_at: q.status === 'Pending' ? null : now, review_note: null}));
+  return {agents, att, ovr, reqs};
+}
+function demoProfiles() {
+  const tls = [...new Set((SEED ? SEED.agents : []).map(a => a.tl).filter(Boolean))].sort();
+  const p = [{id: 'demo-admin', email: 'jmrodriguezd@leangroup.com', full_name: 'JM Rodriguez', role: 'ADMIN', tl_name: null, approved: true},
+             {id: 'demo-rta', email: 'rta.demo@example.invalid', full_name: 'RTA Analyst (demo)', role: 'RTA', tl_name: null, approved: true}];
+  tls.forEach((t, i) => p.push({id: 'demo-tl-' + i, email: 'tl' + (i + 1) + '.demo@example.invalid', full_name: shortName(t), role: 'TL', tl_name: t, approved: true}));
+  p.push({id: 'demo-pending', email: 'new.tl.demo@example.invalid', full_name: 'New Team Lead (demo)', role: 'TL', requested_role: 'TL', tl_name: null, approved: false});
+  return p;
+}
+function hydrate(o) {
+  S.agents = o.agents || [];
+  S.att = Object.fromEntries((o.att || []).map(r => [r.id, r]));
+  S.ovr = Object.fromEntries((o.ovr || []).map(r => [r.id, r]));
+  S.reqs = o.reqs || [];
+  S.settings = {...DEFAULT_SETTINGS, ...(o.settings || {})};
+  S.profiles = o.profiles || [];
+  S.audit = o.audit || [];
+  reindex();
+}
+function snapshot() {
+  return {agents: S.agents, att: Object.values(S.att), ovr: Object.values(S.ovr), reqs: S.reqs, settings: S.settings, profiles: S.profiles, audit: S.audit.slice(0, 500), v: CONFIG.APP_VERSION};
+}
+
+const Store = {
+  /* ---------- boot ---------- */
+  async initDemo() {
+    S.mode = 'demo';
+    const saved = lsGet(LS_DATA);
+    if (saved && saved.agents && saved.agents.length) hydrate(saved);
+    else { const p = seedPayload(); hydrate({...p, profiles: demoProfiles(), settings: {...DEFAULT_SETTINGS}, audit: []}); Store.persistDemo(); }
+  },
+  persistDemo() { if (S.mode === 'demo') lsSet(LS_DATA, snapshot()); },
+  async initLive(url, key) {
+    if (!window.supabase) await loadScript(CONFIG.DB_LIB);
+    S.sb = window.supabase.createClient(url, key, {auth: {persistSession: true, autoRefreshToken: true}});
+    S.mode = 'live';
+  },
+  async fetchAll(table, q) {
+    const out = []; let from = 0; const size = 1000;
+    for (;;) {
+      let r = S.sb.from(table).select('*').range(from, from + size - 1);
+      if (q) r = q(r);
+      const {data, error} = await r;
+      if (error) throw error;
+      out.push(...data);
+      if (data.length < size) break;
+      from += size;
+    }
+    return out;
+  },
+  async loadLive() {
+    const since = D.add(TODAY, -400);
+    const [agents, att, ovr, reqs, settings] = await Promise.all([
+      Store.fetchAll(TABLES.agents),
+      Store.fetchAll(TABLES.att, q => q.gte('date', since)),
+      Store.fetchAll(TABLES.ovr, q => q.gte('date', since)),
+      Store.fetchAll(TABLES.reqs, q => q.gte('end_date', since)),
+      Store.fetchAll(TABLES.settings)
+    ]);
+    let profiles = [], audit = [];
+    if (isRTA()) {
+      profiles = await Store.fetchAll(TABLES.profiles);
+      const a = await S.sb.from(TABLES.audit).select('*').order('ts', {ascending: false}).limit(300);
+      audit = a.data || [];
+    }
+    const app = (settings.find(s => s.key === 'app') || {}).value || {};
+    const dom = (settings.find(s => s.key === 'allowed_domains') || {}).value;
+    hydrate({agents, att, ovr, reqs, profiles, audit, settings: {...app, ...(dom ? {allowedDomains: dom} : {})}});
+    S.connected = true;
+  },
+  subscribe() {
+    if (S.mode !== 'live' || S._chan) return;
+    const map = {ot_agents: 'agents', ot_attendance: 'att', ot_overrides: 'ovr', ot_requests: 'reqs', ot_profiles: 'profiles', ot_settings: 'settings'};
+    let t = null;
+    const later = () => { clearTimeout(t); t = setTimeout(() => { reindex(); render(); }, 250); };
+    const ch = S.sb.channel('otac');
+    for (const tb of Object.keys(map)) {
+      ch.on('postgres_changes', {event: '*', schema: 'public', table: tb}, ev => {
+        const k = map[tb], row = ev.new && Object.keys(ev.new).length ? ev.new : null, old = ev.old;
+        if (k === 'att' || k === 'ovr') { if (ev.eventType === 'DELETE') delete S[k][old.id]; else S[k][row.id] = row; }
+        else if (k === 'settings') { if (row && row.key === 'app') S.settings = {...S.settings, ...row.value}; if (row && row.key === 'allowed_domains') S.settings.allowedDomains = row.value; }
+        else { const arr = S[k]; const id = (row || old).id; const i = arr.findIndex(x => x.id === id); if (ev.eventType === 'DELETE') { if (i >= 0) arr.splice(i, 1); } else if (i >= 0) arr[i] = row; else arr.push(row); }
+        later();
+      });
+    }
+    ch.subscribe(st => { S.connected = st === 'SUBSCRIBED' || S.connected; renderPill(); });
+    S._chan = ch;
+  },
+  async _up(table, rows) {
+    if (S.mode !== 'live' || !rows.length) return;
+    for (let i = 0; i < rows.length; i += 500) {
+      const {error} = await S.sb.from(table).upsert(rows.slice(i, i + 500));
+      if (error) throw error;
+    }
+  },
+  async _del(table, ids) {
+    if (S.mode !== 'live' || !ids.length) return;
+    const {error} = await S.sb.from(table).delete().in('id', ids);
+    if (error) throw error;
+  },
+  async run(fn) {
+    try { await fn(); Store.persistDemo(); reindex(); return true; }
+    catch (e) {
+      console.warn(e); toast('Not saved: ' + (e.message || e), 'err');
+      if (S.mode === 'live') { try { await Store.loadLive(); } catch (_) {} }
+      reindex(); render(); return false;
+    }
+  },
+  /* ---------- writes ---------- */
+  saveAttendance(recs, delIds = []) {
+    return Store.run(async () => {
+      for (const r of recs) S.att[r.id] = r;
+      for (const id of delIds) delete S.att[id];
+      await Store._up(TABLES.att, recs); await Store._del(TABLES.att, delIds);
+    });
+  },
+  saveRequest(r) {
+    return Store.run(async () => {
+      const i = S.reqs.findIndex(x => x.id === r.id), isNew = i < 0;
+      if (isNew) S.reqs.push(r); else S.reqs[i] = r;
+      if (S.mode !== 'live') return;
+      /* plain UPDATE for existing rows so a TL cancel isn't checked against the insert policy (upsert would be) */
+      const {error} = isNew ? await S.sb.from(TABLES.reqs).insert(r) : await S.sb.from(TABLES.reqs).update(r).eq('id', r.id);
+      if (error) throw error;
+    });
+  },
+  saveOverrides(list, delIds = []) {
+    return Store.run(async () => {
+      for (const o of list) S.ovr[o.id] = o; for (const id of delIds) delete S.ovr[id];
+      await Store._up(TABLES.ovr, list); await Store._del(TABLES.ovr, delIds);
+    });
+  },
+  saveAgents(list) { return Store.run(async () => { for (const a of list) { const i = S.agents.findIndex(x => x.id === a.id); if (i >= 0) S.agents[i] = a; else S.agents.push(a); } await Store._up(TABLES.agents, list); }); },
+  saveSettings(st) {
+    return Store.run(async () => {
+      S.settings = {...S.settings, ...st};
+      if (S.mode === 'live') {
+        const {allowedDomains, ...app} = S.settings;
+        await Store._up(TABLES.settings, [{key: 'app', value: app, updated_by: S.user.email, updated_at: new Date().toISOString()},
+          {key: 'allowed_domains', value: allowedDomains, updated_by: S.user.email, updated_at: new Date().toISOString()}]);
+      }
+    });
+  },
+  saveProfile(p) {
+    return Store.run(async () => {
+      const i = S.profiles.findIndex(x => x.id === p.id); if (i >= 0) S.profiles[i] = p; else S.profiles.push(p);
+      if (S.mode === 'live') { const {error} = await S.sb.from(TABLES.profiles).update({full_name: p.full_name, role: p.role, tl_name: p.tl_name, approved: p.approved}).eq('id', p.id); if (error) throw error; }
+    });
+  },
+  deleteProfile(id) { return Store.run(async () => { S.profiles = S.profiles.filter(p => p.id !== id); await Store._del(TABLES.profiles, [id]); }); },
+  async audit(action, detail = {}) {
+    const row = {ts: new Date().toISOString(), actor: S.user ? S.user.email : 'system', action, detail};
+    S.audit.unshift({id: uid('AU'), ...row}); if (S.audit.length > 500) S.audit.length = 500;
+    if (S.mode === 'live') { try { await S.sb.from(TABLES.audit).insert(row); } catch (e) {} } else Store.persistDemo();
+  },
+  /* ---------- seed / backup ---------- */
+  async seedLive() {
+    const p = seedPayload();
+    return Store.run(async () => {
+      await Store._up(TABLES.agents, p.agents); await Store._up(TABLES.ovr, p.ovr); await Store._up(TABLES.att, p.att);
+      const have = new Set(S.reqs.map(r => r.id)); await Store._up(TABLES.reqs, p.reqs.filter(r => !have.has(r.id)));
+      await Store.loadLive();
+    });
+  }
+};
+
+/* =====================================================================
+   AUTH
+   ===================================================================== */
+const Auth = {
+  async restore() {
+    if (S.mode === 'demo') {
+      const id = lsGet(LS_DEMOUSER); const p = S.profiles.find(x => x.id === id && x.approved);
+      if (p) S.user = {...p};
+      return;
+    }
+    const {data} = await S.sb.auth.getSession();
+    if (data && data.session) await Auth.loadProfile(data.session.user);
+    S.sb.auth.onAuthStateChange(async (ev, session) => {
+      if (ev === 'PASSWORD_RECOVERY') Auth.promptNewPassword();
+      if (ev === 'SIGNED_OUT') { S.user = null; render(); }
+    });
+  },
+  async loadProfile(u) {
+    const {data, error} = await S.sb.from(TABLES.profiles).select('*').eq('id', u.id).maybeSingle();
+    if (error) throw error;
+    if (!data) { S.user = {id: u.id, email: u.email, role: 'TL', approved: false, missing: true}; return; }
+    S.user = data;
+    if (data.approved) { await Store.loadLive(); Store.subscribe(); }
+  },
+  domainOk(email) {
+    const dom = String(email || '').split('@')[1]?.toLowerCase();
+    const list = (S.settings.allowedDomains || []).map(x => x.toLowerCase());
+    return !list.length || list.includes(dom);
+  },
+  async signIn(email, pw) {
+    const {data, error} = await S.sb.auth.signInWithPassword({email: email.trim(), password: pw});
+    if (error) throw error;
+    await Auth.loadProfile(data.user);
+    await Store.audit('sign_in', {});
+  },
+  async signUp(f) {
+    if (!Auth.domainOk(f.email)) throw new Error('Use your company email (' + (S.settings.allowedDomains || []).join(', ') + ').');
+    const {data, error} = await S.sb.auth.signUp({email: f.email.trim(), password: f.pw,
+      options: {data: {app: 'ontrac', full_name: f.name, role: f.role, tl_name: f.tl}, emailRedirectTo: location.href.split('#')[0]}});
+    if (error) throw new Error(/database error/i.test(error.message) ? 'This email domain is not allowed. Use your company email.' : /already registered/i.test(error.message) ? 'This email already has an account in this database. Sign in with that password, then request OnTrac access.' : error.message);
+    return data;
+  },
+  async reset(email) {
+    const {error} = await S.sb.auth.resetPasswordForEmail(email.trim(), {redirectTo: location.href.split('#')[0]});
+    if (error) throw error;
+  },
+  async claim(name, role, tl) {
+    const {error} = await S.sb.rpc('ot_claim_profile', {p_name: name, p_role: role, p_tl: tl});
+    if (error) throw new Error(/not allowed/i.test(error.message) ? 'Your email domain is not allowed for this app.' : error.message);
+    const {data} = await S.sb.auth.getUser(); await Auth.loadProfile(data.user);
+  },
+  promptNewPassword() {
+    modal('Set a new password', `<label class="fld"><span>New password (min 8)</span><input class="inp" type="password" id="np1" autocomplete="new-password"></label>`,
+      [{label: 'Save password', cls: 'primary', onClick: async () => {
+        const v = $('#np1').value; if (v.length < 8) { toast('Use at least 8 characters.', 'err'); return false; }
+        const {error} = await S.sb.auth.updateUser({password: v}); if (error) { toast(error.message, 'err'); return false; }
+        toast('Password updated.', 'ok');
+      }}]);
+  },
+  async signOut() {
+    if (S.mode === 'live') { await Store.audit('sign_out', {}); await S.sb.auth.signOut(); if (S._chan) { S.sb.removeChannel(S._chan); S._chan = null; } }
+    else lsDel(LS_DEMOUSER);
+    S.user = null; render();
+  },
+  demoSignIn(id) { const p = S.profiles.find(x => x.id === id); if (!p) return; S.user = {...p}; lsSet(LS_DEMOUSER, id); S.view = 'dash'; Store.audit('sign_in', {demo: true}); render(); }
+};
+</script>
+
+<script>
+/* =====================================================================
+   SHELL — auth screens, header, navigation, router
+   ===================================================================== */
+const VIEWS = [
+  {id: 'dash',  ico: '▦', label: 'Dashboard',      sect: 'Monitor'},
+  {id: 'att',   ico: '✓', label: 'Attendance',     sect: 'Team Lead'},
+  {id: 'req',   ico: '+', label: 'Requests',       sect: 'Team Lead'},
+  {id: 'sched', ico: '▤', label: 'Schedule',       sect: 'Team Lead'},
+  {id: 'appr',  ico: '◆', label: 'Approvals',      sect: 'RTA', rta: true},
+  {id: 'rep',   ico: 'Σ', label: 'Hours Report',   sect: 'RTA'},
+  {id: 'adm',   ico: '⚙', label: 'Admin',          sect: 'RTA', rta: true}
+];
+function pendingCount() { const mine = myTeamKey(); return S.reqs.filter(r => r.status === 'Pending' && (mine === null || norm((S.idx.agent[r.agent] || {}).tl) === mine)).length; }
+
+function renderPill() {
+  const el = $('#dbpill'); if (!el) return;
+  if (S.mode === 'demo') el.outerHTML = `<span id="dbpill" class="pill warn" title="Data is saved in this browser only. Connect the Database in Admin → Data."><span class="dot"></span>Database · Demo mode</span>`;
+  else el.outerHTML = S.connected ? `<span id="dbpill" class="pill ok" title="Live sync on"><span class="dot"></span>Database · Live</span>` : `<span id="dbpill" class="pill err"><span class="dot"></span>Database · Offline</span>`;
+}
+
+function render() {
+  TODAY = D.today();
+  tip.hide();
+  const root = $('#root');
+  if (!S.user) return renderAuth(root);
+  if (!S.user.approved) return renderPending(root);
+  const v = VIEWS.find(x => x.id === S.view) || VIEWS[0];
+  if (v.rta && !isRTA()) S.view = 'dash';
+  if (!root.querySelector('#app')) {
+    root.innerHTML = `<div id="app">
+      <header class="top">
+        <div class="brand"><div class="logo">OT</div><div>OnTrac Attendance<small>Ops · Attendance · PTO · Swaps</small></div></div>
+        <div class="spacer"></div>
+        <span id="dbpill"></span>
+        <div class="userchip"><div class="avatar" id="uav"></div><div class="uname"><div id="unm" style="font-weight:700"></div><div class="muted mono" id="url" style="font-size:10.5px"></div></div></div>
+        <button class="btn sm ghost" id="signout" title="Sign out">Sign out</button>
+      </header>
+      <nav class="side" id="nav" aria-label="Main"></nav>
+      <main id="main"></main></div>`;
+    $('#signout').onclick = () => Auth.signOut();
+  }
+  renderPill();
+  $('#uav').textContent = initials(S.user.full_name || S.user.email);
+  $('#unm').textContent = S.user.full_name || S.user.email;
+  $('#url').textContent = S.user.role + (S.user.role === 'TL' ? ' · ' + teamLabel(S.user.tl_name) : '');
+  let sect = '', nav = '';
+  const pc = pendingCount();
+  for (const x of VIEWS) {
+    if (x.rta && !isRTA()) continue;
+    if (x.sect !== sect) { sect = x.sect; nav += `<div class="sect">${esc(sect === 'RTA' && !isRTA() ? 'Reports' : sect)}</div>`; }
+    const badge = (x.id === 'appr' && pc) ? `<span class="badge">${pc}</span>` : '';
+    nav += `<button class="${S.view === x.id ? 'on' : ''}" data-v="${x.id}"><span class="ico">${x.ico}</span>${x.label}${badge}</button>`;
+  }
+  $('#nav').innerHTML = nav;
+  $$('#nav button').forEach(b => b.onclick = () => { S.view = b.dataset.v; render(); window.scrollTo(0, 0); });
+  const main = $('#main');
+  ({dash: viewDash, att: viewAtt, req: viewReq, sched: viewSched, appr: viewAppr, rep: viewRep, adm: viewAdmin})[S.view](main);
+}
+
+function renderAuth(root) {
+  if (S.mode === 'demo') {
+    const opts = S.profiles.filter(p => p.approved).map(p => `<button data-id="${esc(p.id)}"><div class="avatar">${esc(initials(p.full_name))}</div><div><div style="font-weight:700">${esc(p.full_name)}</div><div class="muted mono" style="font-size:11px">${esc(p.role)}${p.role === 'TL' ? ' · ' + esc(teamLabel(p.tl_name)) : ''}</div></div></button>`).join('');
+    root.innerHTML = `<div class="auth"><div class="box">
+      <div class="brand"><div class="logo">OT</div><div>OnTrac Attendance<small>Ops · Attendance · PTO · Swaps</small></div></div>
+      <h2>Sign in</h2>
+      <div class="row" style="margin-bottom:12px"><span class="pill warn"><span class="dot"></span>Database · Demo mode</span><span class="note">Data stays in this browser.</span></div>
+      <p class="note" style="margin-top:0">Pick a demo identity to explore each role. When the Database is connected, this screen becomes an email + password sign-in.</p>
+      <div class="demo-list">${opts}</div></div></div>`;
+    $$('.demo-list button', root).forEach(b => b.onclick = () => Auth.demoSignIn(b.dataset.id));
+    return;
+  }
+  const tab = S._authTab || 'in';
+  root.innerHTML = `<div class="auth"><div class="box">
+    <div class="brand"><div class="logo">OT</div><div>OnTrac Attendance<small>Ops · Attendance · PTO · Swaps</small></div></div>
+    <h2>${tab === 'in' ? 'Sign in' : tab === 'up' ? 'Request access' : 'Reset password'}</h2>
+    <p class="note" style="margin-top:0">${tab === 'up' ? 'Use your company email. An RTA admin approves new accounts and links you to your team.' : 'Team Leads and RTAs sign in with their company email.'}</p>
+    <form id="af" class="mb" style="display:flex;flex-direction:column;gap:12px;padding:0">
+      ${tab === 'up' ? `<label class="fld"><span>Full name</span><input class="inp" id="a_name" required autocomplete="name"></label>` : ''}
+      <label class="fld"><span>Company email</span><input class="inp" id="a_email" type="email" required autocomplete="email" placeholder="name@${esc((S.settings.allowedDomains || ['company.com'])[0])}"></label>
+      ${tab !== 'reset' ? `<label class="fld"><span>Password</span><input class="inp" id="a_pw" type="password" required minlength="8" autocomplete="${tab === 'up' ? 'new-password' : 'current-password'}"></label>` : ''}
+      ${tab === 'up' ? `<div class="grid2"><label class="fld"><span>Role requested</span><select class="inp" id="a_role"><option value="TL">Team Lead</option><option value="RTA">RTA</option></select></label>
+        <label class="fld"><span>Team (roster name)</span><input class="inp" id="a_tl" placeholder="LAST, FIRST MIDDLE"></label></div>` : ''}
+      <div id="a_msg"></div>
+      <button class="btn primary" type="submit" style="justify-content:center">${tab === 'in' ? 'Sign in' : tab === 'up' ? 'Create account' : 'Send reset link'}</button>
+    </form>
+    <div class="row" style="justify-content:space-between;margin-top:12px;font-size:12.5px">
+      ${tab !== 'in' ? '<a href="#" data-t="in">Back to sign in</a>' : '<a href="#" data-t="up">Request access</a><a href="#" data-t="reset">Forgot password?</a>'}
+    </div></div></div>`;
+  $$('[data-t]', root).forEach(a => a.onclick = e => { e.preventDefault(); S._authTab = a.dataset.t; render(); });
+  $('#af').onsubmit = async e => {
+    e.preventDefault();
+    const msg = $('#a_msg'), btn = $('#af button[type=submit]'); btn.disabled = true; msg.innerHTML = '';
+    try {
+      const email = $('#a_email').value;
+      if (tab === 'in') { await Auth.signIn(email, $('#a_pw').value); render(); }
+      else if (tab === 'up') {
+        await Auth.signUp({email, pw: $('#a_pw').value, name: $('#a_name').value.trim(), role: $('#a_role').value, tl: $('#a_tl').value.trim().toUpperCase()});
+        msg.innerHTML = `<div class="okbox">Account created. Check your inbox to confirm your email, then sign in. An RTA admin will approve your access.</div>`;
+      } else { await Auth.reset(email); msg.innerHTML = `<div class="okbox">If that email has an account, a reset link is on its way.</div>`; }
+    } catch (err) { msg.innerHTML = `<div class="errbox">${esc(/invalid login/i.test(err.message) ? 'Email or password is incorrect.' : /not confirmed/i.test(err.message) ? 'Confirm your email first — check your inbox for the link.' : err.message)}</div>`; }
+    btn.disabled = false;
+  };
+}
+function renderPending(root) {
+  root.innerHTML = `<div class="auth"><div class="box">
+    <div class="brand"><div class="logo">OT</div><div>OnTrac Attendance<small>Ops · Attendance · PTO · Swaps</small></div></div>
+    <h2>${S.user.missing ? 'Request access' : 'Waiting for approval'}</h2>
+    <p class="tx2">You're signed in as <b>${esc(S.user.email)}</b>. An RTA admin needs to approve your account and link it to your team before you can submit statuses or requests.</p>
+    ${S.user.missing ? `<div class="warnbox" style="margin-bottom:12px">This account isn't registered for OnTrac yet. Request access below.</div>
+      <div style="display:flex;flex-direction:column;gap:10px"><label class="fld"><span>Full name</span><input class="inp" id="c_name"></label>
+      <div class="grid2"><label class="fld"><span>Role requested</span><select class="inp" id="c_role"><option value="TL">Team Lead</option><option value="RTA">RTA</option></select></label>
+      <label class="fld"><span>Team (roster name)</span><input class="inp" id="c_tl" placeholder="LAST, FIRST MIDDLE"></label></div>
+      <div id="c_msg"></div><button class="btn primary" id="c_go" style="justify-content:center">Request OnTrac access</button></div>` : ''}
+    <div class="row" style="margin-top:16px"><button class="btn" id="pchk">Check again</button><button class="btn ghost" id="pout">Sign out</button></div></div></div>`;
+  $('#pout').onclick = () => Auth.signOut();
+  if ($('#c_go')) $('#c_go').onclick = async () => { try { await Auth.claim($('#c_name').value.trim(), $('#c_role').value, $('#c_tl').value); render(); } catch (e) { $('#c_msg').innerHTML = `<div class="errbox">${esc(e.message)}</div>`; } };
+  $('#pchk').onclick = async () => { if (S.mode === 'live') { const {data} = await S.sb.auth.getUser(); if (data.user) await Auth.loadProfile(data.user); } render(); };
+}
+
+/* shared UI helpers */
+function teamSelect(id, val, allowAll = true) {
+  const mine = myTeamKey();
+  if (mine !== null) return `<select class="inp" id="${id}" disabled><option>${esc(teamLabel(S.user.tl_name))}</option></select>`;
+  return `<select class="inp" id="${id}">${allowAll ? `<option value="ALL">All teams</option>` : ''}${teams().map(t => `<option value="${esc(t.key)}" ${t.key === val ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select>`;
+}
+function agentOptions(list, sel) { return list.map(a => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join(''); }
+function statusTag(s) {
+  const c = {Pending: 'warn', Approved: 'ok', Denied: 'err', Cancelled: ''}[s] || '';
+  const ic = {Pending: '◷', Approved: '✓', Denied: '✕', Cancelled: '–'}[s] || '';
+  return `<span class="pill ${c}">${ic} ${esc(s)}</span>`;
+}
+function head(title, sub, right = '') { return `<div class="pagehead"><div><h1>${esc(title)}</h1><p>${sub}</p></div><div class="spacer"></div>${right}</div>`; }
+function download(name, text, type = 'text/csv') { const b = new Blob([text], {type}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+function toCSV(rows) { if (!rows.length) return ''; const h = Object.keys(rows[0]); const q = v => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }; return [h.join(','), ...rows.map(r => h.map(k => q(r[k])).join(','))].join('\n'); }
+async function exportXlsx(name, sheets) {
+  try {
+    if (!window.XLSX) await loadScript(CONFIG.XLSX_LIB);
+    const wb = XLSX.utils.book_new();
+    for (const [sn, rows] of Object.entries(sheets)) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{note: 'No rows'}]), sn.slice(0, 31));
+    XLSX.writeFile(wb, name);
+  } catch (e) {
+    toast('Excel library unavailable offline — downloading CSV instead.', 'err');
+    const [sn, rows] = Object.entries(sheets)[0]; download(name.replace(/\.xlsx$/, '') + '_' + sn + '.csv', toCSV(rows));
+  }
+}
+</script>
+
+<script>
+/* =====================================================================
+   CHARTS — hand-rolled SVG (no dependency; works offline)
+   One y-axis per chart, thin marks, 2px surface gaps, hover layer on all.
+   ===================================================================== */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function niceMax(v) { if (!(v > 0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); const n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; }
+function topRound(x, y, w, h, r) { r = Math.min(r, w / 2, h); if (h <= 0) return ''; return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`; }
+const Chart = {
+  frame(el, h) { const w = Math.max(260, el.clientWidth || 600); return {w, h, m: {t: 14, r: 14, b: 28, l: 46}}; },
+  yAxis(g, f, max, fmt, ticks = 4) {
+    let s = '';
+    for (let i = 0; i <= ticks; i++) {
+      const v = max * i / ticks, y = f.m.t + (f.h - f.m.t - f.m.b) * (1 - i / ticks);
+      s += `<g class="grid"><line x1="${f.m.l}" x2="${f.w - f.m.r}" y1="${y}" y2="${y}"/></g><text x="${f.m.l - 6}" y="${y + 3.5}" text-anchor="end">${esc(fmt(v))}</text>`;
+    }
+    return s;
+  },
+  xLabels(f, labels, x, bw) {
+    const every = Math.max(1, Math.ceil(labels.length / Math.max(1, (f.w - f.m.l - f.m.r) / 52)));
+    return labels.map((l, i) => i % every ? '' : `<text x="${x(i) + bw / 2}" y="${f.h - 8}" text-anchor="middle">${esc(l)}</text>`).join('');
+  },
+  target(f, y, label) { return `<line class="tline" x1="${f.m.l}" x2="${f.w - f.m.r}" y1="${y}" y2="${y}"/><text class="tlabel" x="${f.w - f.m.r}" y="${y - 5}" text-anchor="end">${esc(label)}</text>`; },
+  /* stacked bars: series=[{name,color,values[]}]; tipRows(i) optional */
+  stacked(el, o) {
+    const f = Chart.frame(el, o.h || 240), n = o.labels.length;
+    const totals = o.labels.map((_, i) => o.series.reduce((s, x) => s + (x.values[i] || 0), 0));
+    const max = niceMax(Math.max(o.yMin || 0, ...totals, o.target ? o.target.value * 1.15 : 0));
+    const iw = f.w - f.m.l - f.m.r, ih = f.h - f.m.t - f.m.b, band = iw / Math.max(1, n), bw = Math.max(3, Math.min(28, band * 0.62));
+    const x = i => f.m.l + band * i + (band - bw) / 2, Y = v => f.m.t + ih * (1 - v / max);
+    let s = Chart.yAxis(null, f, max, o.yFmt, Number.isInteger(max) && max >= 5 && max % 4 && !(max % 5) ? 5 : 4);
+    o.labels.forEach((_, i) => {
+      let acc = 0; const segs = o.series.map(se => ({c: se.color, v: se.values[i] || 0})).filter(z => z.v > 0);
+      segs.forEach((z, k) => {
+        const y0 = Y(acc), y1 = Y(acc + z.v); acc += z.v;
+        const top = k === segs.length - 1, hgt = Math.max(0, y0 - y1 - (k ? 2 : 0));
+        if (hgt <= 0) return;
+        s += top ? `<path d="${topRound(x(i), y1, bw, hgt, 4)}" fill="${z.c}"/>` : `<rect x="${x(i)}" y="${y1}" width="${bw}" height="${hgt}" fill="${z.c}"/>`;
+      });
+    });
+    if (o.target) s += Chart.target(f, Y(o.target.value), o.target.label);
+    s += `<line x1="${f.m.l}" x2="${f.w - f.m.r}" y1="${f.m.t + ih}" y2="${f.m.t + ih}" stroke="#2C3C5A"/>`;
+    s += Chart.xLabels(f, o.labels, x, bw);
+    s += `<rect class="hl" x="0" y="${f.m.t}" width="${band}" height="${ih}" fill="#4EC9F5" opacity="0" pointer-events="none"/>`;
+    o.labels.forEach((_, i) => s += `<rect class="hit" data-i="${i}" x="${f.m.l + band * i}" y="${f.m.t}" width="${band}" height="${ih}"/>`);
+    el.innerHTML = `<svg viewBox="0 0 ${f.w} ${f.h}" height="${f.h}" role="img" aria-label="${esc(o.aria || 'Stacked bar chart')}">${s}</svg>`;
+    const hl = $('.hl', el);
+    $$('.hit', el).forEach(r => {
+      const i = +r.dataset.i;
+      r.onmouseenter = ev => {
+        hl.setAttribute('x', f.m.l + band * i); hl.setAttribute('opacity', '.06');
+        const rows = o.series.map(se => `<div class="r"><span><i style="background:${se.color}"></i>${esc(se.name)}</span><b>${esc(o.yFmt(se.values[i] || 0, true))}</b></div>`).join('');
+        tip.show(`<div class="t">${esc(o.tipTitle ? o.tipTitle(i) : o.labels[i])}</div>${rows}<div class="r" style="border-top:1px solid #2C3C5A;margin-top:4px;padding-top:4px"><span>Total</span><b>${esc(o.yFmt(totals[i], true))}</b></div>${o.tipExtra ? o.tipExtra(i) : ''}`, ev);
+      };
+      r.onmousemove = tip.move; r.onmouseleave = () => { hl.setAttribute('opacity', '0'); tip.hide(); };
+      if (o.onClick) { r.style.cursor = 'pointer'; r.onclick = () => o.onClick(i); }
+    });
+  },
+  /* line chart with crosshair */
+  line(el, o) {
+    const f = Chart.frame(el, o.h || 220), n = o.labels.length;
+    const vals = o.series.flatMap(s => s.values.filter(v => v != null));
+    const lo = o.yMin != null ? o.yMin : Math.min(...vals, o.target ? o.target.value : 1);
+    const min = Math.max(0, Math.floor((lo - 0.02) * 20) / 20), max = o.yMax != null ? o.yMax : 1;
+    const iw = f.w - f.m.l - f.m.r, ih = f.h - f.m.t - f.m.b, step = n > 1 ? iw / (n - 1) : 0;
+    const X = i => f.m.l + (n > 1 ? step * i : iw / 2), Y = v => f.m.t + ih * (1 - (v - min) / (max - min || 1));
+    let s = '';
+    for (let k = 0; k <= 4; k++) { const v = min + (max - min) * k / 4, y = Y(v); s += `<g class="grid"><line x1="${f.m.l}" x2="${f.w - f.m.r}" y1="${y}" y2="${y}"/></g><text x="${f.m.l - 6}" y="${y + 3.5}" text-anchor="end">${esc(o.yFmt(v))}</text>`; }
+    if (o.target) s += Chart.target(f, Y(o.target.value), o.target.label);
+    for (const se of o.series) {
+      let d = '', pen = false;
+      se.values.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(v).toFixed(1); pen = true; });
+      s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      se.values.forEach((v, i) => { if (v != null && (n <= 16 || i === n - 1)) s += `<circle cx="${X(i)}" cy="${Y(v)}" r="${n <= 16 ? 3 : 4}" fill="${se.color}" stroke="#121C2E" stroke-width="2"/>`; });
+    }
+    const every = Math.max(1, Math.ceil(n / Math.max(1, iw / 52)));
+    s += o.labels.map((l, i) => i % every ? '' : `<text x="${X(i)}" y="${f.h - 8}" text-anchor="middle">${esc(l)}</text>`).join('');
+    s += `<line class="xh" x1="0" x2="0" y1="${f.m.t}" y2="${f.m.t + ih}" stroke="#4EC9F5" stroke-width="1" opacity="0"/><g class="dots"></g>`;
+    s += `<rect class="hit" x="${f.m.l - 10}" y="${f.m.t}" width="${iw + 20}" height="${ih}"/>`;
+    el.innerHTML = `<svg viewBox="0 0 ${f.w} ${f.h}" height="${f.h}" role="img" aria-label="${esc(o.aria || 'Line chart')}">${s}</svg>`;
+    const svg = $('svg', el), xh = $('.xh', el), dots = $('.dots', el), hit = $('.hit', el);
+    hit.onmousemove = ev => {
+      const pt = svg.getBoundingClientRect(), sx = (ev.clientX - pt.left) * (f.w / pt.width);
+      const i = Math.max(0, Math.min(n - 1, Math.round((sx - f.m.l) / (step || 1))));
+      xh.setAttribute('x1', X(i)); xh.setAttribute('x2', X(i)); xh.setAttribute('opacity', '.5');
+      dots.innerHTML = o.series.map(se => se.values[i] == null ? '' : `<circle cx="${X(i)}" cy="${Y(se.values[i])}" r="4.5" fill="${se.color}" stroke="#121C2E" stroke-width="2"/>`).join('');
+      tip.show(`<div class="t">${esc(o.tipTitle ? o.tipTitle(i) : o.labels[i])}</div>` + o.series.map(se => `<div class="r"><span><i style="background:${se.color}"></i>${esc(se.name)}</span><b>${se.values[i] == null ? '—' : esc(o.yFmt(se.values[i], true))}</b></div>`).join('') + (o.tipExtra ? o.tipExtra(i) : ''), ev);
+    };
+    hit.onmouseleave = () => { xh.setAttribute('opacity', '0'); dots.innerHTML = ''; tip.hide(); };
+  },
+  /* horizontal bars (HTML) */
+  hbars(el, rows, o = {}) {
+    const max = Math.max(1e-9, ...rows.map(r => r.value));
+    el.innerHTML = rows.map(r => `<div class="hb" data-tip="${esc(r.tip || '')}" style="display:grid;grid-template-columns:${o.lw || 110}px 1fr ${o.vw || 64}px;gap:10px;align-items:center;margin:7px 0;font-size:12.5px">
+        <span class="tx2" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.dot !== false ? `<i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${r.color};margin-right:6px"></i>` : ''}${esc(r.label)}</span>
+        <span style="background:#0D1627;border-radius:4px;height:14px;position:relative;overflow:hidden"><span style="position:absolute;inset:0 auto 0 0;width:${(r.value / max * 100).toFixed(1)}%;background:${r.color};border-radius:0 4px 4px 0"></span></span>
+        <b style="text-align:right;font-variant-numeric:tabular-nums">${esc(r.text)}</b></div>`).join('') || '<div class="note">No data in this range.</div>';
+    $$('.hb', el).forEach(h => { if (!h.dataset.tip) return; h.onmouseenter = ev => tip.show(h.dataset.tip, ev); h.onmousemove = tip.move; h.onmouseleave = tip.hide; });
+  }
+};
+let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setTimeout(() => { if (S.user && ['dash'].includes(S.view)) render(); }, 200); });
+
+/* =====================================================================
+   DASHBOARD
+   ===================================================================== */
+function dashRange() {
+  const d = S.dash, t = TODAY;
+  if (!d.preset) d.preset = 'MTD';
+  const ws = D.weekStart(t);
+  const P = {
+    TODAY: [t, t], YEST: [D.add(t, -1), D.add(t, -1)], WEEK: [ws, t], LWEEK: [D.add(ws, -7), D.add(ws, -1)],
+    MTD: [D.monthStart(t), t], MONTH: [D.monthStart(t), D.monthEnd(t)], LMONTH: [D.monthStart(D.add(D.monthStart(t), -1)), D.add(D.monthStart(t), -1)], L30: [D.add(t, -29), t]
+  };
+  if (d.preset !== 'CUSTOM') [d.from, d.to] = P[d.preset];
+  return [d.from, d.to];
+}
+function kpiState(v, t, dir) {
+  if (v == null) return ['', '', 'No data'];
+  if (dir === 'le') { if (v <= t) return ['good', 'st-good', '✓ Within target']; if (v <= t * 1.2) return ['warn', 'st-warn', '▲ ' + ((v - t) * 100).toFixed(1) + ' pts over']; return ['bad', 'st-bad', '▲ ' + ((v - t) * 100).toFixed(1) + ' pts over']; }
+  if (v >= t) return ['good', 'st-good', '✓ On target']; if (v >= t - 0.03) return ['warn', 'st-warn', '▼ ' + ((t - v) * 100).toFixed(1) + ' pts under']; return ['bad', 'st-bad', '▼ ' + ((t - v) * 100).toFixed(1) + ' pts under'];
+}
+function kpiTile(lbl, val, cmp, cls, def) {
+  return `<div class="kpi ${cls}"><div class="bar"></div><div class="lbl">${esc(lbl)}${def ? `<span class="info-i" title="${esc(def)}">i</span>` : ''}</div><div class="val">${val}</div><div class="cmp">${cmp}</div></div>`;
+}
+function viewDash(main) {
+  const d = S.dash, st = S.settings;
+  const [from, to] = dashRange();
+  const toA = to > TODAY ? TODAY : to;
+  const dates = D.range(from, toA);
+  let agents = scopeAgents(d.team);
+  if (d.sme !== 'ALL') agents = agents.filter(a => (a.sme || '').trim() === d.sme);
+  const tot = aggregate(agents, dates);
+  const presets = [['TODAY', 'Today'], ['YEST', 'Yesterday'], ['WEEK', 'This week'], ['LWEEK', 'Last week'], ['MTD', 'MTD'], ['MONTH', 'Full month'], ['LMONTH', 'Last month'], ['L30', 'Last 30d'], ['CUSTOM', 'Custom']];
+  const pend = S.reqs.filter(r => r.status === 'Pending' && agents.some(a => a.id === r.agent));
+  const oldest = pend.length ? Math.max(...pend.map(r => D.diff(String(r.submitted_at).slice(0, 10), TODAY))) : 0;
+  const scopeLbl = myTeamKey() !== null ? teamLabel(S.user.tl_name) : d.team === 'ALL' ? 'All teams' : teamLabel((teams().find(t => t.key === d.team) || {}).name);
+
+  /* today's submission band */
+  const todayRows = (myTeamKey() !== null ? [{key: myTeamKey(), name: S.user.tl_name}] : teams()).map(t => {
+    const ag = S.agents.filter(a => a.active !== false && norm(a.tl) === t.key);
+    let sch = 0, un = 0; for (const a of ag) { const i = dayInfo(a, TODAY); if (i.working) { sch++; if (i.state === 'unset') un++; } }
+    return {t, sch, un};
+  }).filter(r => r.sch);
+  const missing = todayRows.filter(r => r.un);
+  const band = !todayRows.length ? '' : missing.length
+    ? `<div class="band"><b class="st-warn">◷ Today · ${D.fmt(TODAY)}</b><span>${todayRows.length - missing.length} of ${todayRows.length} teams fully submitted.</span><span class="tx2">Waiting on: ${missing.map(r => `<b>${esc(teamLabel(r.t.name))}</b> (${r.un}/${r.sch})`).join(', ')}</span><span class="spacer"></span><button class="btn sm" id="goatt">Open Attendance</button></div>`
+    : `<div class="band ok"><b class="st-good">✓ Today · ${D.fmt(TODAY)}</b><span>All scheduled agents have a status.</span></div>`;
+
+  const k1 = kpiState(tot.att, st.attTarget, 'ge'), k2 = kpiState(tot.unplPct, st.unplTarget, 'le'), k3 = kpiState(tot.planPct, st.planTarget, 'le'), k4 = kpiState(tot.totPct, st.unplTarget + st.planTarget, 'le');
+  const k7 = tot.subm == null ? ['', '', ''] : tot.subm >= 0.98 ? ['good', 'st-good', '✓ Complete'] : tot.subm >= 0.9 ? ['warn', 'st-warn', '◷ ' + tot.unset + ' not submitted'] : ['bad', 'st-bad', '✕ ' + tot.unset + ' not submitted'];
+  const multi = dates.length > 1, perDay = v => tot.days ? v / tot.days : null;
+  const hcVal = v => multi ? num(perDay(v), 1) : int(v);
+  const hcSub = (v, extra) => `<span class="muted">${multi ? 'avg/day · ' + int(v) + ' agent-days' : ''}${extra ? (multi ? ' · ' : '') + extra : ''}</span>`;
+  const kpisHC = [
+    kpiTile('Headcount', int(tot.hc), `<span class="muted">Active agents in scope${S.dash.sme !== 'ALL' ? ' · SME filter' : ''}</span>`, '', 'Active roster agents in the selected team/SME. Inactive agents are excluded.'),
+    kpiTile('Scheduled HC', hcVal(tot.schedDays), hcSub(tot.schedDays, int(tot.schedHrs) + ' paid h'), '', 'Agents with a working shift (base pattern + approved swaps/changes). Multi-day ranges show the daily average.'),
+    kpiTile('OFF HC', hcVal(tot.offDays), hcSub(tot.offDays, tot.hc && tot.days ? pct(tot.offDays / (tot.hc * tot.days), 0) + ' of HC' : ''), '', 'Agents on a rest day (OFF) in the schedule, including OFF days created by approved Swap OFF / rest-day swaps.'),
+    kpiTile('Absent HC', hcVal(tot.absentDays), hcSub(tot.absentDays, num(tot.lostHrs, 1) + ' lost h'), tot.absentDays ? 'warn' : '', 'Scheduled agents tagged PTO, LWOP, Personal, Medical or NCNS (approved PTO counts automatically). Late/Undertime count as present.'),
+    kpiTile('Present HC', hcVal(tot.schedDays - tot.absentDays - tot.unset), hcSub(tot.schedDays - tot.absentDays - tot.unset, tot.unset ? tot.unset + ' not submitted' : 'all submitted'), '', 'Scheduled − Absent − Not submitted. Includes Late and Undertime.')
+  ].join('');
+  const kpis = [
+    kpiTile('Attendance', pct(tot.att), `<span class="${k1[1]}">${k1[2]}</span><span class="muted">· goal ${pct(st.attTarget, 0)}</span>`, k1[0], '(Scheduled − Absent) ÷ Scheduled agent-days, as in the tracker. Absent = PTO, LWOP, Personal, Medical, NCNS. Late/Undertime count as present.'),
+    kpiTile('Unplanned shrink', pct(tot.unplPct), `<span class="${k2[1]}">${k2[2]}</span><span class="muted">· ≤ ${pct(st.unplTarget, 0)}</span>`, k2[0], '(Personal + Medical + NCNS paid hours + Late/Undertime minutes ÷ 60) ÷ scheduled paid hours.'),
+    kpiTile('Planned shrink', pct(tot.planPct), `<span class="${k3[1]}">${k3[2]}</span><span class="muted">· ≤ ${pct(st.planTarget, 0)}</span>`, k3[0], '(PTO + LWOP paid hours) ÷ scheduled paid hours. Approved PTO counts automatically.'),
+    kpiTile('Total shrink', pct(tot.totPct), `<span class="${k4[1]}">${k4[2]}</span><span class="muted">· ≤ ${pct(st.unplTarget + st.planTarget, 0)}</span>`, k4[0], 'Unplanned + planned shrinkage.'),
+    kpiTile('Lost hrs', num(tot.lostHrs, 1), `<span class="muted">of ${int(tot.schedHrs)} sched h · worked ${int(tot.workedHrs)} h</span>`, '', 'Hours lost to absence, PTO/LWOP, late and undertime. Paid hours = shift span − ' + st.mealHrs + ' h unpaid meal.'),
+    kpiTile('Submission', pct(tot.subm), `<span class="${k7[1]}">${k7[2]}</span>`, k7[0], 'Agent-days with a status ÷ (with a status + not submitted), from go-live through today. Approved PTO counts as submitted.'),
+    kpiTile('Pending approvals', String(pend.length), pend.length ? `<span class="st-warn">◷ oldest ${oldest} d</span>` : '<span class="st-good">✓ Queue clear</span>', pend.length ? 'warn' : 'good', 'PTO and swap requests waiting for RTA review.')
+  ].join('');
+
+  main.innerHTML = head('Attendance Dashboard', `${esc(scopeLbl)} · ${D.fmt(from)} – ${D.fmt(to)}${to > TODAY ? ' (actuals through today)' : ''}`,
+      `<button class="btn" id="dexp">⤓ Export view</button>`) +
+    `<div class="filters">
+      <label class="fld"><span>Date range</span><div class="seg" id="dpre">${presets.map(([k, l]) => `<button data-p="${k}" class="${d.preset === k ? 'on' : ''}">${l}</button>`).join('')}</div></label>
+      ${d.preset === 'CUSTOM' ? `<label class="fld"><span>From</span><input type="date" class="inp" id="dfrom" value="${from}"></label><label class="fld"><span>To</span><input type="date" class="inp" id="dto" value="${to}"></label>` : ''}
+      <label class="fld"><span>Team</span>${teamSelect('dteam', d.team)}</label>
+      <label class="fld"><span>SME</span><select class="inp" id="dsme"><option value="ALL">All SMEs</option>${smes().map(s => `<option ${s === d.sme ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+      <label class="fld"><span>Trend by</span><div class="seg" id="dgran"><button data-g="day" class="${d.gran === 'day' ? 'on' : ''}">Day</button><button data-g="week" class="${d.gran === 'week' ? 'on' : ''}">Week</button></div></label>
+    </div>` + band +
+    (tot.knownDays === 0 && dates.length ? `<div class="empty" style="margin-bottom:14px"><b>No statuses in this range yet</b>Team leads submit agent statuses in Attendance; approved PTO appears here automatically.${S.mode === 'demo' && isRTA() ? `<div style="margin-top:12px"><button class="btn" id="dsample">Load sample attendance (demo only)</button></div>` : ''}</div>` : '') +
+    `<div class="kpis k5">${kpisHC}</div><div class="kpis">${kpis}</div>
+    <div class="dgrid">
+      <div class="card c12"><div class="cardhead"><div><h3>Daily headcount</h3><div class="sub">HC split into Present, each absence reason, Not submitted and OFF · bars add up to HC · future days show the schedule and approved PTO</div></div>
+        <div class="seg" id="hcview"><button data-v="chart" class="${(d.hcView || 'chart') === 'chart' ? 'on' : ''}">Chart</button><button data-v="table" class="${d.hcView === 'table' ? 'on' : ''}">Tracker table</button></div></div>
+        <div class="legend" style="margin-bottom:8px" id="hc_leg"></div><div class="chart" id="ch_hc"></div><div class="tbl-wrap hidden" id="hc_tbl"></div></div>
+      <div class="card c12"><div class="cardhead"><div><h3>PTO & Medical per day · loss hours</h3><div class="sub">How many agents were on PTO or Medical each day and the paid hours lost · other = Personal, NCNS, LWOP, Late/UT · future days show approved PTO</div></div></div>
+        <div class="legend" style="margin-bottom:8px"><span><i style="background:#3987e5"></i>PTO hrs</span><span><i style="background:#199e70"></i>Medical hrs</span><span><i style="background:#5D7290"></i>Other lost hrs</span></div>
+        <div class="chart" id="ch_pm"></div><div class="tbl-wrap" id="pm_tbl" style="margin-top:10px"></div></div>
+      <div class="card c8"><div class="cardhead"><div><h3>Shrinkage trend</h3><div class="sub">Lost hours ÷ scheduled hours, stacked by reason · dashed line = total shrinkage ceiling</div></div></div>
+        <div class="legend" style="margin-bottom:8px">${CAT.map(c => `<span><i style="background:${c.color}"></i>${c.label}</span>`).join('')}</div><div class="chart" id="ch_trend"></div></div>
+      <div class="card c4"><div class="cardhead"><div><h3>Absence mix</h3><div class="sub">Lost hours by reason · occurrences on hover</div></div></div><div id="ch_mix"></div>
+        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px"><h3 style="font-size:13px">Unplanned by weekday</h3><div class="sub">Where absences cluster (Sat–Fri week)</div><div class="chart" id="ch_dow"></div></div></div>
+      <div class="card c6"><div class="cardhead"><div><h3>Attendance % trend</h3><div class="sub">(Scheduled − Absent) ÷ Scheduled · dashed line = goal</div></div></div><div class="chart" id="ch_att"></div></div>
+      <div class="card c6"><div class="cardhead"><div><h3>Next 14 days · PTO load vs cap</h3><div class="sub">Approved + pending PTO headcount per day · cap = ${pct(st.ptoCapPct, 0)} of scheduled HC</div></div></div>
+        <div class="legend" style="margin-bottom:8px"><span><i style="background:#3987e5"></i>Approved</span><span><i style="background:#3987e5;opacity:.45"></i>Pending</span><span><i style="background:none;border-top:2px dashed var(--amber);border-radius:0;height:0;width:14px"></i>Daily cap</span></div><div class="chart" id="ch_fwd"></div><div id="fwd_tbl" style="margin-top:8px"></div></div>
+      <div class="card c12"><div class="cardhead"><div><h3 id="sc_title">Team scorecard</h3><div class="sub" id="sc_sub">Click a team to drill into its agents · click headers to sort</div></div></div><div class="tbl-wrap" id="sc_tbl"></div></div>
+      <div class="card c8"><div class="cardhead"><div><h3>Attendance heatmap</h3><div class="sub">Agent × day status${dates.length > 31 ? ' · last 31 days of range' : ''} · ${isRTA() || myTeamKey() ? 'click a cell to update' : ''}</div></div></div>
+        <div class="legend" style="margin-bottom:8px"><span><i style="background:var(--present)"></i>Present</span>${CAT.map(c => `<span><i style="background:${c.color}"></i>${c.label}</span>`).join('')}<span><i style="box-shadow:inset 0 0 0 1px #7a2a33"></i>Not submitted</span><span><i style="background:var(--off);border:1px solid var(--line2)"></i>Off</span><span><i style="background:#3987e5;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.3) 0 2px,transparent 2px 6px)"></i>From approved request</span></div>
+        <div class="hm-wrap" id="hm"></div></div>
+      <div class="card c4"><div class="cardhead"><div><h3>Attendance watchlist</h3><div class="sub">Bradford factor = spells² × days (Personal, Medical, NCNS) · ≥50 watch · ≥125 concern · ≥400 critical</div></div></div><div id="bf"></div></div>
+    </div>`;
+
+  /* --- wiring --- */
+  $$('#dpre button').forEach(b => b.onclick = () => { d.preset = b.dataset.p; if (d.preset === 'CUSTOM') { d.from = from; d.to = to; } render(); });
+  if ($('#dfrom')) { $('#dfrom').onchange = e => { d.from = e.target.value; if (d.from > d.to) d.to = d.from; render(); }; $('#dto').onchange = e => { d.to = e.target.value; if (d.to < d.from) d.from = d.to; render(); }; }
+  if ($('#dteam') && !$('#dteam').disabled) $('#dteam').onchange = e => { d.team = e.target.value; render(); };
+  $('#dsme').onchange = e => { d.sme = e.target.value; render(); };
+  $$('#dgran button').forEach(b => b.onclick = () => { d.gran = b.dataset.g; render(); });
+  if ($('#goatt')) $('#goatt').onclick = () => { S.view = 'att'; S.attv.date = TODAY; render(); };
+  if ($('#dsample')) $('#dsample').onclick = () => demoSample();
+  $('#dexp').onclick = () => exportDash(agents, dates, D.range(from, to));
+  $$('#hcview button').forEach(b => b.onclick = () => { d.hcView = b.dataset.v; render(); });
+  renderHC(agents, D.range(from, to));
+  renderPM(agents, D.range(from, to));
+
+  /* --- trend --- */
+  const buckets = [];
+  if (d.gran === 'week') { const m = new Map(); for (const x of dates) { const w = D.weekStart(x); if (!m.has(w)) m.set(w, []); m.get(w).push(x); } for (const [w, ds] of m) buckets.push({label: 'WB ' + D.md(w), title: 'Week of ' + D.fmt(w) + ' (Sat–Fri)', dates: ds}); }
+  else for (const x of dates) buckets.push({label: D.md(x), title: D.fmt(x), dates: [x]});
+  const bAgg = buckets.map(b => aggregate(agents, b.dates));
+  const pf = (v, t) => t ? pct(v, 2) : pct(v, 0);
+  if (buckets.length) {
+    Chart.stacked($('#ch_trend'), {labels: buckets.map(b => b.label), tipTitle: i => buckets[i].title, yFmt: pf, aria: 'Shrinkage trend by reason',
+      series: CAT.map(c => ({name: c.label, color: c.color, values: bAgg.map(z => z.schedHrs ? z.catHrs[c.key] / z.schedHrs : 0)})),
+      target: {value: st.unplTarget + st.planTarget, label: 'Ceiling ' + pct(st.unplTarget + st.planTarget, 0)},
+      tipExtra: i => `<div class="note" style="margin-top:4px">${num(bAgg[i].lostHrs, 1)} lost of ${int(bAgg[i].schedHrs)} sched hrs · ${bAgg[i].unset} not submitted</div>`,
+      onClick: d.gran === 'day' && dates.length > 1 ? i => { d.preset = 'CUSTOM'; d.from = d.to = buckets[i].dates[0]; render(); } : null});
+    Chart.line($('#ch_att'), {labels: buckets.map(b => b.label), tipTitle: i => buckets[i].title, yFmt: pf, yMax: 1, aria: 'Attendance trend',
+      series: [{name: 'Attendance', color: '#4EC9F5', values: bAgg.map(z => z.att)}], target: {value: st.attTarget, label: 'Goal ' + pct(st.attTarget, 0)},
+      tipExtra: i => `<div class="note" style="margin-top:4px">${bAgg[i].absentDays} absent of ${bAgg[i].schedDays} scheduled${bAgg[i].unset ? ' · ' + bAgg[i].unset + ' not submitted' : ''}</div>`});
+  } else { $('#ch_trend').innerHTML = $('#ch_att').innerHTML = '<div class="note">Range is in the future — see the 14-day outlook.</div>'; }
+
+  /* --- mix --- */
+  Chart.hbars($('#ch_mix'), CAT.map(c => ({label: c.label, color: c.color, value: tot.catHrs[c.key], text: num(tot.catHrs[c.key], 1) + ' h',
+    tip: `<div class="t">${c.label}</div><div class="r"><span>Hours lost</span><b>${num(tot.catHrs[c.key], 1)}</b></div><div class="r"><span>Occurrences</span><b>${tot.catCnt[c.key]}</b></div><div class="r"><span>Share of sched hrs</span><b>${pct(tot.schedHrs ? tot.catHrs[c.key] / tot.schedHrs : null, 2)}</b></div>`})));
+  /* --- weekday --- */
+  const dowAgg = DAYS.map((_, k) => aggregate(agents, dates.filter(x => D.dowIdx(x) === k)));
+  Chart.stacked($('#ch_dow'), {labels: DAYS, h: 150, yFmt: pf, aria: 'Unplanned shrinkage by weekday',
+    series: [{name: 'Unplanned', color: '#4EC9F5', values: dowAgg.map(z => z.unplPct || 0)}], target: {value: st.unplTarget, label: '≤ ' + pct(st.unplTarget, 0)},
+    tipExtra: i => `<div class="note" style="margin-top:4px">${dowAgg[i].cnt.PERSONAL + dowAgg[i].cnt.MEDICAL + dowAgg[i].cnt.NCNS} absences · ${dowAgg[i].cnt.LATE} lates</div>`});
+
+  /* --- forward 14 days --- */
+  const fdates = D.range(D.add(TODAY, 1), D.add(TODAY, 14));
+  const hist = aggregate(agents, D.range(D.add(TODAY, -28), TODAY));
+  const fRate = hist.unplPct != null && hist.knownDays >= 20 ? hist.unplPct : st.unplTarget;
+  const fwd = fdates.map(x => {
+    let hc = 0, hrs = 0, ap = 0, pe = 0, apH = 0;
+    for (const a of agents) { const i = dayInfo(a, x); if (!i.working) continue; hc++; hrs += i.hrs; if (i.status === 'PTO' || i.status === 'LWOP') { ap++; apH += i.hrs; } }
+    for (const r of S.reqs) if (r.kind === 'PTO' && r.status === 'Pending' && (r.dates || []).includes(x) && agents.some(a => a.id === r.agent)) pe++;
+    const cap = ptoCap(hc);
+    return {x, hc, hrs, ap, pe, cap, proj: hrs ? (apH + fRate * hrs) / hrs : null};
+  });
+  const fel = $('#ch_fwd');
+  Chart.stacked(fel, {labels: fwd.map(f => D.md(f.x)), h: 200, yFmt: v => (v % 1 ? v.toFixed(1) : String(v)), yMin: Math.max(1, ...fwd.map(f => f.cap)), aria: 'PTO load next 14 days',
+    tipTitle: i => D.fmt(fwd[i].x), series: [{name: 'Approved PTO', color: '#3987e5', values: fwd.map(f => f.ap)}, {name: 'Pending PTO', color: 'rgba(57,135,229,.45)', values: fwd.map(f => f.pe)}],
+    tipExtra: i => `<div class="r"><span>Cap</span><b>${fwd[i].cap}</b></div><div class="r"><span>Scheduled HC</span><b>${fwd[i].hc}</b></div><div class="r"><span>Projected shrink</span><b>${pct(fwd[i].proj)}</b></div>${fwd[i].ap + fwd[i].pe > fwd[i].cap ? '<div class="st-bad" style="margin-top:4px">▲ Over cap</div>' : ''}`});
+  /* cap ticks */
+  const svg = $('svg', fel);
+  if (svg) {
+    const f = Chart.frame(fel, 200), n = fwd.length, iw = f.w - f.m.l - f.m.r, ih = f.h - f.m.t - f.m.b, band = iw / n;
+    const max = niceMax(Math.max(...fwd.map(z => z.ap + z.pe), ...fwd.map(z => z.cap), 1));
+    let s = ''; fwd.forEach((z, i) => { const y = f.m.t + ih * (1 - z.cap / max); s += `<line x1="${f.m.l + band * i + 3}" x2="${f.m.l + band * (i + 1) - 3}" y1="${y}" y2="${y}" stroke="#F5B841" stroke-width="2" stroke-dasharray="4 3" pointer-events="none"/>`; });
+    const hl = $('.hl', svg); hl.insertAdjacentHTML('beforebegin', s);
+  }
+  const over = fwd.filter(f => f.ap + f.pe > f.cap);
+  $('#fwd_tbl').innerHTML = `<div class="note">Projected shrinkage = (approved PTO hrs + ${pct(fRate, 1)} forecast unplanned × scheduled hrs) ÷ scheduled hrs. Forecast unplanned = trailing 28-day actual${hist.knownDays >= 20 ? '' : ' (not enough history — using target)'}.</div>` +
+    (over.length ? `<div class="warnbox" style="margin-top:8px">▲ ${over.length} day(s) over the PTO cap: ${over.map(f => `<b>${D.md(f.x)}</b> (${f.ap + f.pe}/${f.cap})`).join(', ')}</div>` : `<div class="okbox" style="margin-top:8px">✓ No day in the next 14 is over the PTO cap.</div>`);
+
+  /* --- scorecard --- */
+  renderScorecard(agents, dates);
+  /* --- heatmap --- */
+  renderHeatmap($('#hm'), agents, dates.slice(-31));
+  /* --- bradford --- */
+  const bf = agents.map(a => ({a, ...bradford(a, dates)})).filter(x => x.score > 0).sort((x, y) => y.score - x.score).slice(0, 12);
+  $('#bf').innerHTML = bf.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Agent</th><th class="num">Spells</th><th class="num">Days</th><th class="num">Score</th><th>Band</th></tr></thead><tbody>${bf.map(x => { const [b, c] = bfBand(x.score); return `<tr><td><div style="font-weight:700;font-size:12.5px">${esc(shortName(x.a.name))}</div><div class="muted" style="font-size:11px">${esc(teamLabel(x.a.tl))}</div></td><td class="num">${x.spells}</td><td class="num">${x.days}</td><td class="num"><b>${x.score}</b></td><td><span class="st-${c}">${c === 'good' ? '✓' : '▲'} ${b}</span></td></tr>`; }).join('')}</tbody></table></div>`
+    : `<div class="empty"><b>No unplanned absences</b>Nobody in this range has a Personal, Medical or NCNS day.</div>`;
+}
+
+function renderScorecard(agents, dates) {
+  const d = S.dash;
+  const byTeam = myTeamKey() === null && d.team === 'ALL';
+  let rows;
+  if (byTeam) {
+    const g = new Map(); for (const a of agents) { const k = norm(a.tl); if (!g.has(k)) g.set(k, {key: k, name: a.tl, list: []}); g.get(k).list.push(a); }
+    rows = [...g.values()].map(t => ({id: t.key, label: teamLabel(t.name), sub: t.list.length + ' agents', ...aggregate(t.list, dates)}));
+  } else rows = agents.map(a => ({id: a.id, label: shortName(a.name), sub: a.sme ? 'SME ' + shortName(a.sme) : '', agent: a, ...aggregate([a], dates)}));
+  $('#sc_title').textContent = byTeam ? 'Team scorecard' : 'Agent scorecard';
+  $('#sc_sub').textContent = byTeam ? 'Click a team to drill into its agents · click headers to sort' : 'Per-agent attendance and shrinkage for the range · click headers to sort';
+  const cols = [['label', byTeam ? 'Team' : 'Agent', 0], ...(byTeam ? [['hc', 'HC', 1]] : []), ['schedDays', 'Sched days', 1], ['offDays', 'OFF days', 1], ['absentDays', 'Absent', 1], ['schedHrs', 'Sched hrs', 1], ['att', 'Attendance', 1], ['unplPct', 'Unplanned', 1], ['planPct', 'Planned', 1], ['totPct', 'Total shrink', 1], ['ncns', 'NCNS', 1], ['late', 'Late', 1], ['lostHrs', 'Lost hrs', 1], ['subm', 'Submitted', 1]];
+  rows.forEach(r => { r.ncns = r.cnt.NCNS; r.late = r.cnt.LATE + r.cnt.UNDERTIME; });
+  const {k, d: dir} = d.sort;
+  rows.sort((a, b) => { const x = a[k], y = b[k]; if (typeof x === 'string') return dir * x.localeCompare(y); return dir * ((x == null ? -1 : x) - (y == null ? -1 : y)); });
+  const st = S.settings;
+  const cell = (r, c) => {
+    const v = r[c];
+    if (c === 'label') return `<td><b>${esc(v)}</b><div class="muted" style="font-size:11px">${esc(r.sub)}</div></td>`;
+    if (c === 'att') { const s = kpiState(v, st.attTarget, 'ge'); return `<td class="num"><span class="${s[1]}">${pct(v)}</span></td>`; }
+    if (c === 'unplPct') { const s = kpiState(v, st.unplTarget, 'le'); return `<td class="num"><span class="${s[1]}">${pct(v)}</span></td>`; }
+    if (c === 'planPct') { const s = kpiState(v, st.planTarget, 'le'); return `<td class="num"><span class="${s[1]}">${pct(v)}</span></td>`; }
+    if (c === 'totPct' || c === 'subm') return `<td class="num">${pct(v)}</td>`;
+    if (c === 'schedHrs' || c === 'lostHrs') return `<td class="num">${num(v, 1)}</td>`;
+    return `<td class="num">${int(v)}</td>`;
+  };
+  const total = aggregate(agents, dates); total.ncns = total.cnt.NCNS; total.late = total.cnt.LATE + total.cnt.UNDERTIME; total.label = 'Total'; total.sub = agents.length + ' agents';
+  $('#sc_tbl').innerHTML = `<table class="tbl"><thead><tr>${cols.map(([c, l, n]) => `<th class="sortable ${n ? 'num' : ''}" data-k="${c}">${l}${k === c ? (dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr class="${byTeam ? 'click' : ''}" data-id="${esc(r.id)}">${cols.map(([c]) => cell(r, c)).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}" class="muted">No agents in scope.</td></tr>`}</tbody>
+    <tfoot><tr>${cols.map(([c]) => cell(total, c)).join('')}</tr></tfoot></table>`;
+  $$('#sc_tbl th').forEach(th => th.onclick = () => { const c = th.dataset.k; d.sort = {k: c, d: d.sort.k === c ? -d.sort.d : (c === 'label' ? 1 : -1)}; renderScorecard(agents, dates); });
+  if (byTeam) $$('#sc_tbl tbody tr').forEach(tr => tr.onclick = () => { d.team = tr.dataset.id; render(); });
+}
+
+function renderHeatmap(el, agents, dates) {
+  if (!dates.length || !agents.length) { el.innerHTML = '<div class="empty"><b>Nothing to show</b>No agents or dates in scope.</div>'; return; }
+  let h = `<table class="hm"><thead><tr><th class="nm">Agent</th>${dates.map(x => `<th class="${D.dowIdx(x) < 2 ? 'we' : ''}" title="${D.fmt(x)}">${D.dname(x)[0]}<br>${x.slice(8)}</th>`).join('')}</tr></thead><tbody>`;
+  for (const a of agents) {
+    h += `<tr><td class="nm" title="${esc(a.name)}">${esc(shortName(a.name))}</td>`;
+    for (const x of dates) {
+      const i = dayInfo(a, x);
+      let cls = i.state === 'off' || i.state === 'offtag' ? 'off' : i.state === 'unset' ? 'unset' : (i.state === 'future' || i.state === 'pre') ? 'future' : i.status === 'PRESENT' ? 'present' : i.status;
+      if (i.src === 'request') cls += ' req';
+      const code = i.state === 'unset' ? '?' : i.status ? ST[i.status].code : '';
+      h += `<td><div class="c ${cls}" data-a="${a.id}" data-d="${x}">${code}</div></td>`;
+    }
+    h += '</tr>';
+  }
+  el.innerHTML = h + '</tbody></table>';
+  el.onmouseover = ev => {
+    const c = ev.target.closest('.c'); if (!c) return;
+    const a = S.idx.agent[c.dataset.a], i = dayInfo(a, c.dataset.d);
+    tip.show(`<div class="t">${esc(shortName(a.name))}</div><div class="muted" style="margin-bottom:4px">${D.fmt(i.iso)} · ${esc(i.working ? shortShift(i.shift) + ' · ' + i.hrs + ' h' : 'OFF')}${i.ov ? ' · changed' : ''}</div>
+      <div class="r"><span>Status</span><b>${i.status ? ST[i.status].label : i.state === 'unset' ? 'Not submitted' : i.state === 'future' ? 'Scheduled' : i.state === 'pre' ? 'Before go-live' : 'Off'}</b></div>
+      ${i.mins ? `<div class="r"><span>Minutes</span><b>${i.mins}</b></div>` : ''}${i.lost ? `<div class="r"><span>Hours lost</span><b>${num(i.lost, 2)}</b></div>` : ''}
+      ${i.src === 'request' ? `<div class="note">From approved request ${esc(i.lv.id)}</div>` : ''}${i.rec && i.rec.submitted_by ? `<div class="note">By ${esc(i.rec.submitted_by)}</div>` : ''}${i.rec && i.rec.note ? `<div class="note">“${esc(i.rec.note)}”</div>` : ''}`, ev);
+  };
+  el.onmousemove = tip.move; el.onmouseleave = tip.hide;
+  el.onclick = ev => { const c = ev.target.closest('.c'); if (!c || c.classList.contains('off')) return; quickEdit(S.idx.agent[c.dataset.a], c.dataset.d); };
+}
+
+function quickEdit(a, iso) {
+  const i = dayInfo(a, iso);
+  if (!i.working) return;
+  if (!canEditAgent(a) || !canEditDate(iso)) { toast(iso > TODAY ? 'Future days can be set by approved PTO only.' : 'This day is locked for your role (older than ' + S.settings.lockDays + ' days).'); return; }
+  const cur = i.rec ? i.rec.status : '';
+  const m = modal(`${shortName(a.name)} · ${D.fmt(iso)}`, `<div class="muted">${esc(shortShift(i.shift))} · ${i.hrs} paid h${i.src === 'request' ? ' · approved PTO ' + esc(i.lv.id) : ''}</div>
+    <label class="fld"><span>Status</span><select class="inp" id="qe_s"><option value="">— Not submitted —</option>${ST_ORDER.map(s => `<option value="${s}" ${s === cur ? 'selected' : ''}>${ST[s].label}</option>`).join('')}</select></label>
+    <label class="fld"><span>Minutes (Late / Undertime)</span><input class="inp" type="number" min="0" max="600" id="qe_m" value="${i.rec ? i.rec.mins || 0 : 0}"></label>
+    <label class="fld"><span>Note</span><input class="inp" id="qe_n" value="${esc(i.rec ? i.rec.note || '' : '')}" maxlength="200"></label>`,
+    [{label: 'Cancel'}, {label: 'Save', cls: 'primary', onClick: async () => {
+      const s = $('#qe_s').value;
+      if (!s) { await Store.saveAttendance([], [i.key]); await Store.audit('attendance_clear', {agent: a.id, date: iso}); }
+      else { const rec = makeAtt(a, iso, s, +$('#qe_m').value || 0, $('#qe_n').value.trim()); await Store.saveAttendance([rec]); await Store.audit('attendance_save', {agent: a.id, date: iso, status: s}); }
+      toast('Saved.', 'ok'); render();
+    }}]);
+  return m;
+}
+function makeAtt(a, iso, status, mins, note) {
+  const shift = shiftOf(a, iso), hrs = paidHrs(shift);
+  const m = ST[status]; const lost = !parseShift(shift) ? 0 : m.mins ? Math.min(hrs, (mins || 0) / 60) : status === 'PRESENT' ? 0 : hrs;
+  return {id: iso + '|' + a.id, date: iso, agent: a.id, status, mins: m.mins ? (mins || 0) : 0, note: note || null, shift, sched_hrs: hrs, lost_hrs: Math.round(lost * 100) / 100, src: 'app', submitted_by: S.user.email, submitted_at: new Date().toISOString()};
+}
+/* ---------- daily headcount (HC · Scheduled · OFF · Present · Absent) ---------- */
+const HC_SEG = [
+  {key: 'present', label: 'Present', color: '#7189AE'},
+  ...CAT.filter(c => c.key !== 'LATEUT').map(c => ({key: c.key, label: c.label, color: c.color})),
+  {key: 'unset', label: 'Not submitted', color: '#8A4A55'},
+  {key: 'future', label: 'Scheduled (upcoming)', color: '#3E5275'},
+  {key: 'off', label: 'OFF', color: '#222D44'}
+];
+function dayStaff(agents, x) {
+  const z = aggregate(agents, [x]);
+  let pend = 0; const ids = new Set(agents.map(a => a.id));
+  for (const r of S.reqs) if (r.kind === 'PTO' && r.status === 'Pending' && ids.has(r.agent) && (r.dates || []).includes(x)) pend++;
+  const future = x > TODAY ? z.schedDays - z.knownDays : 0;
+  return {x, z, hc: z.hc, sched: z.schedDays, off: z.offDays, present: z.present, absent: z.absentDays, unset: z.unset, future,
+    seg: {present: z.present, PTO: z.cnt.PTO, PERSONAL: z.cnt.PERSONAL, MEDICAL: z.cnt.MEDICAL, NCNS: z.cnt.NCNS, LWOP: z.cnt.LWOP, unset: z.unset, future, off: z.offDays},
+    lateut: z.cnt.LATE + z.cnt.UNDERTIME, pend, cap: ptoCap(z.schedDays)};
+}
+function renderHC(agents, days) {
+  const d = S.dash, view = d.hcView || 'chart';
+  const rows = days.map(x => dayStaff(agents, x));
+  $('#hc_leg').innerHTML = view === 'chart' ? HC_SEG.map(s => `<span><i style="background:${s.color}"></i>${s.label}</span>`).join('') : '';
+  $('#ch_hc').classList.toggle('hidden', view !== 'chart'); $('#hc_tbl').classList.toggle('hidden', view !== 'table');
+  if (!rows.length) { $('#ch_hc').innerHTML = '<div class="note">No days in range.</div>'; return; }
+  if (view === 'chart') {
+    Chart.stacked($('#ch_hc'), {labels: rows.map(r => D.md(r.x)), h: 230, aria: 'Daily headcount by status', yFmt: v => (v % 1 ? '' : String(v)),
+      tipTitle: i => D.fmt(rows[i].x) + (rows[i].x > TODAY ? ' · upcoming' : rows[i].x === TODAY ? ' · today' : ''),
+      series: HC_SEG.map(s => ({name: s.label, color: s.color, values: rows.map(r => r.seg[s.key] || 0)})),
+      tipExtra: i => { const r = rows[i]; return `<div style="border-top:1px solid #2C3C5A;margin-top:4px;padding-top:4px"><div class="r"><span>HC</span><b>${r.hc}</b></div><div class="r"><span>Scheduled</span><b>${r.sched}</b></div><div class="r"><span>OFF</span><b>${r.off}</b></div><div class="r"><span>Attendance</span><b>${pct(r.z.att)}</b></div>${r.lateut ? `<div class="r"><span>Late/UT (present)</span><b>${r.lateut}</b></div>` : ''}${r.pend ? `<div class="r"><span>Pending PTO</span><b>${r.pend}</b></div>` : ''}</div>`; },
+      onClick: rows.length > 1 ? i => { if (rows[i].x <= TODAY) { d.preset = 'CUSTOM'; d.from = d.to = rows[i].x; render(); } } : null});
+    return;
+  }
+  const tot = aggregate(agents, days.filter(x => x <= TODAY));
+  const sum = k => rows.reduce((s, r) => s + (typeof k === 'function' ? k(r) : r[k]), 0);
+  const fut = x => x > TODAY;
+  const R = [
+    ['WB', r => D.md(D.weekStart(r.x)), ''],
+    ['Day', r => D.dname(r.x), ''],
+    ['HC', r => r.hc, num(sum('hc') / rows.length, 1) + ' avg'],
+    ['Scheduled', r => r.sched, int(sum('sched'))],
+    ['OFF', r => r.off, int(sum('off'))],
+    ['Present', r => fut(r.x) ? '' : r.present, int(tot.present)],
+    ['Absent', r => r.absent || (fut(r.x) ? '' : 0), int(tot.absentDays)],
+    ['  PTO', r => r.seg.PTO || '', int(sum(r => r.seg.PTO))],
+    ['    PTO hrs', r => r.z.hrs.PTO ? num(r.z.hrs.PTO, 1) : '', num(sum(r => r.z.hrs.PTO), 1)],
+    ['  LWOP', r => r.seg.LWOP || '', int(sum(r => r.seg.LWOP))],
+    ['  Personal', r => r.seg.PERSONAL || '', int(tot.cnt.PERSONAL)],
+    ['  Medical', r => r.seg.MEDICAL || '', int(tot.cnt.MEDICAL)],
+    ['    Medical hrs', r => r.z.hrs.MEDICAL ? num(r.z.hrs.MEDICAL, 1) : '', num(tot.hrs.MEDICAL, 1)],
+    ['  NCNS', r => r.seg.NCNS || '', int(tot.cnt.NCNS)],
+    ['Late / UT', r => r.lateut || '', int(tot.cnt.LATE + tot.cnt.UNDERTIME)],
+    ['Not submitted', r => r.unset || '', int(tot.unset)],
+    ['Attendance %', r => fut(r.x) ? '' : pct(r.z.att), pct(tot.att)],
+    ['Unplanned %', r => fut(r.x) ? '' : pct(r.z.unplPct), pct(tot.unplPct)],
+    ['Planned %', r => pct(r.z.planPct), pct(tot.planPct)],
+    ['Total shrink %', r => fut(r.x) ? '' : pct(r.z.totPct), pct(tot.totPct)],
+    ['Sched hrs', r => num(r.z.schedHrs, 0), int(sum(r => r.z.schedHrs))],
+    ['Lost hrs', r => r.z.lostHrs ? num(r.z.lostHrs, 1) : '', num(tot.lostHrs, 1)],
+    ['PTO cap', r => r.cap, ''],
+    ['Pending PTO', r => r.pend || '', int(sum('pend'))]
+  ];
+  const hl = new Set(['HC', 'Scheduled', 'OFF', 'Absent', 'Attendance %']);
+  $('#hc_tbl').innerHTML = `<table class="tbl" style="font-size:12px"><thead><tr><th style="position:sticky;left:0;z-index:3">Metric</th>${rows.map(r => `<th class="num" style="${r.x === TODAY ? 'color:var(--cyan)' : fut(r.x) ? 'opacity:.65' : ''}">${D.md(r.x)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>${R.map(([l, f, t]) =>
+    `<tr><td style="position:sticky;left:0;background:var(--card);white-space:pre;${hl.has(l) ? 'font-weight:700' : 'color:var(--tx2)'}">${esc(l)}</td>${rows.map(r => `<td class="num" style="${fut(r.x) ? 'opacity:.65' : ''}${hl.has(l) ? ';font-weight:700' : ''}">${esc(f(r))}</td>`).join('')}<td class="num"><b>${esc(t)}</b></td></tr>`).join('')}</tbody></table>`;
+}
+function renderPM(agents, days) {
+  if (!days.length) { $('#ch_pm').innerHTML = '<div class="note">No days in range.</div>'; return; }
+  const rows = days.map(x => { const z = aggregate(agents, [x]); const other = z.lostHrs - z.hrs.PTO - z.hrs.MEDICAL; return {x, z, ptoN: z.cnt.PTO, ptoH: z.hrs.PTO, medN: z.cnt.MEDICAL, medH: z.hrs.MEDICAL, oth: Math.max(0, other), lost: z.lostHrs, sched: z.schedHrs}; });
+  Chart.stacked($('#ch_pm'), {labels: rows.map(r => D.md(r.x)), h: 210, aria: 'PTO and Medical loss hours per day', yFmt: (v, t) => t ? num(v, 1) + ' h' : String(Math.round(v)),
+    tipTitle: i => D.fmt(rows[i].x) + (rows[i].x > TODAY ? ' · upcoming' : ''),
+    series: [{name: 'PTO hrs', color: '#3987e5', values: rows.map(r => r.ptoH)}, {name: 'Medical hrs', color: '#199e70', values: rows.map(r => r.medH)}, {name: 'Other lost hrs', color: '#5D7290', values: rows.map(r => r.oth)}],
+    tipExtra: i => { const r = rows[i]; return `<div style="border-top:1px solid #2C3C5A;margin-top:4px;padding-top:4px"><div class="r"><span>Agents on PTO</span><b>${r.ptoN}</b></div><div class="r"><span>Agents on Medical</span><b>${r.medN}</b></div><div class="r"><span>Share of sched hrs</span><b>${pct(r.sched ? r.lost / r.sched : null, 2)}</b></div></div>`; }});
+  const sum = k => rows.reduce((s, r) => s + r[k], 0), fut = x => x > TODAY;
+  const R = [['PTO · agents', r => r.ptoN || '', int(sum('ptoN')), 1], ['PTO · hrs', r => r.ptoH ? num(r.ptoH, 1) : '', num(sum('ptoH'), 1), 0],
+    ['Medical · agents', r => r.medN || '', int(sum('medN')), 1], ['Medical · hrs', r => r.medH ? num(r.medH, 1) : '', num(sum('medH'), 1), 0],
+    ['Other lost · hrs', r => r.oth ? num(r.oth, 1) : '', num(sum('oth'), 1), 0], ['Total lost · hrs', r => r.lost ? num(r.lost, 1) : '', num(sum('lost'), 1), 1],
+    ['% of sched hrs', r => r.sched && !fut(r.x) ? pct(r.lost / r.sched, 1) : '', pct(sum('sched') ? rows.filter(r => !fut(r.x)).reduce((s, r) => s + r.lost, 0) / rows.filter(r => !fut(r.x)).reduce((s, r) => s + r.sched, 0) || 0 : null, 1), 0]];
+  $('#pm_tbl').innerHTML = `<table class="tbl" style="font-size:12px"><thead><tr><th style="position:sticky;left:0;z-index:3">Loss hours</th>${rows.map(r => `<th class="num" style="${r.x === TODAY ? 'color:var(--cyan)' : fut(r.x) ? 'opacity:.65' : ''}">${D.dname(r.x)[0]} ${D.md(r.x)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>${R.map(([l, f, t, b]) =>
+    `<tr><td style="position:sticky;left:0;background:var(--card);white-space:nowrap;${b ? 'font-weight:700' : 'color:var(--tx2)'}">${esc(l)}</td>${rows.map(r => `<td class="num" style="${fut(r.x) ? 'opacity:.65' : ''}${b ? ';font-weight:700' : ''}">${esc(f(r))}</td>`).join('')}<td class="num"><b>${esc(t)}</b></td></tr>`).join('')}</tbody></table>`;
+}
+function staffSheet(agents, days) {
+  return days.map(x => { const r = dayStaff(agents, x), z = r.z; return {date: x, week_beginning: D.weekStart(x), weekday: D.dname(x), hc: r.hc, scheduled: r.sched, off: r.off, present: x > TODAY ? '' : r.present, absent: r.absent, pto: z.cnt.PTO, pto_hrs: +z.hrs.PTO.toFixed(2), lwop: z.cnt.LWOP, personal: z.cnt.PERSONAL, medical: z.cnt.MEDICAL, medical_hrs: +z.hrs.MEDICAL.toFixed(2), ncns: z.cnt.NCNS, late_ut: r.lateut, not_submitted: r.unset, attendance_pct: x > TODAY || z.att == null ? '' : +(z.att * 100).toFixed(2), unplanned_pct: x > TODAY || z.unplPct == null ? '' : +(z.unplPct * 100).toFixed(2), planned_pct: z.planPct == null ? '' : +(z.planPct * 100).toFixed(2), sched_hrs: +z.schedHrs.toFixed(2), lost_hrs: +z.lostHrs.toFixed(2), pto_cap: r.cap, pending_pto: r.pend}; });
+}
+function exportDash(agents, dates, allDays) {
+  const rows = [];
+  for (const a of agents) for (const x of dates) { const i = dayInfo(a, x); rows.push({date: x, week_beginning: D.weekStart(x), weekday: D.dname(x), agent_id: a.id, agent: a.name, team_lead: a.tl || 'Unassigned', sme: a.sme || '', shift: i.shift || '', scheduled: i.working ? 1 : 0, sched_paid_hrs: i.hrs, status: i.status || (i.state === 'unset' ? 'NOT_SUBMITTED' : i.working ? 'SCHEDULED' : 'OFF'), status_source: i.src || '', category: i.cat, minutes: i.mins || 0, lost_hrs: +i.lost.toFixed(2), worked_hrs: i.status ? +(i.hrs - i.lost).toFixed(2) : 0, schedule_changed: i.ov ? 1 : 0, submitted_by: i.rec ? i.rec.submitted_by : ''}); }
+  exportXlsx(`OnTrac_Attendance_${dates[0] || TODAY}_${dates[dates.length - 1] || TODAY}.xlsx`, {Daily_Staffing: staffSheet(agents, allDays || dates), Daily_Detail: rows});
+}
+/* demo-only sample attendance so the dashboard can be previewed; every record is tagged src='sample' */
+async function demoSample() {
+  if (S.mode !== 'demo') return;
+  const ok = await confirmBox('Load sample attendance?', 'Generates <b>synthetic</b> statuses for the last 30 days (tagged “sample”) so you can preview the dashboard. Clear it anytime in Admin → Data. Demo mode only — nothing reaches the Database.', 'Load sample');
+  if (!ok) return;
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const recs = [];
+  for (const a of S.agents.filter(x => x.active !== false)) for (const x of D.range(D.add(TODAY, -29), D.add(TODAY, -1))) {
+    const i = dayInfo(a, x); if (!i.working || i.rec || i.lv) continue;
+    const r = rnd(); let s = 'PRESENT', m = 0;
+    if (r < 0.012) s = 'NCNS'; else if (r < 0.032) s = 'MEDICAL'; else if (r < 0.05) s = 'PERSONAL'; else if (r < 0.06) s = 'LWOP'; else if (r < 0.11) { s = 'LATE'; m = 5 + Math.floor(rnd() * 40); } else if (r < 0.125) { s = 'UNDERTIME'; m = 30 + Math.floor(rnd() * 90); }
+    const rec = makeAtt(a, x, s, m, 'Sample data'); rec.src = 'sample'; rec.submitted_by = 'sample'; recs.push(rec);
+  }
+  await Store.saveAttendance(recs); S.dash.preset = 'L30'; toast(recs.length + ' sample statuses loaded.', 'ok'); render();
+}
+</script>
+
+<script>
+/* =====================================================================
+   ATTENDANCE — Team Lead daily status submission
+   ===================================================================== */
+window.addEventListener('beforeunload', e => { if (Object.keys(S.attv.dirty).length) { e.preventDefault(); e.returnValue = ''; } });
+function attEffective(i, dirty) {
+  if (dirty) return dirty.clear ? {status: null} : {status: dirty.status, mins: dirty.mins, note: dirty.note, src: 'dirty'};
+  if (i.rec) return {status: i.rec.status, mins: i.rec.mins || 0, note: i.rec.note || '', src: 'tag'};
+  if (i.src === 'request') return {status: i.status, mins: 0, note: '', src: 'request'};
+  return {status: null, mins: 0, note: ''};
+}
+async function attGuard() {
+  if (!Object.keys(S.attv.dirty).length) return true;
+  const ok = await confirmBox('Discard unsaved statuses?', 'You have ' + Object.keys(S.attv.dirty).length + ' unsaved change(s) on this day.', 'Discard', 'bad');
+  if (ok) S.attv.dirty = {};
+  return ok;
+}
+function viewAtt(main) {
+  const v = S.attv;
+  if (!v.date) v.date = TODAY;
+  if (v.team == null) v.team = myTeamKey() !== null ? myTeamKey() : (teams()[0] || {}).key || 'ALL';
+  const agents = scopeAgents(v.team).filter(a => !v.q || a.name.toLowerCase().includes(v.q.toLowerCase()));
+  const infos = agents.map(a => dayInfo(a, v.date));
+  const working = infos.filter(i => i.working), off = infos.filter(i => !i.working);
+  const editable = canEditDate(v.date);
+  const z = emptyAgg(); working.forEach(i => addDay(z, i)); finish(z);
+  const dirtyN = Object.keys(v.dirty).length;
+  const lockMsg = !editable ? (v.date > TODAY ? `Future date — statuses open on the day. Approved PTO already shows below.` : `Locked: Team Leads can edit up to ${S.settings.lockDays} day(s) back. Ask an RTA to correct older days.`) : '';
+  const noTeam = myTeamKey() === '' || (S.user.role === 'TL' && !S.user.tl_name);
+
+  main.innerHTML = head('Daily Attendance', 'Tag each scheduled agent. Paid hours come from the schedule (shift span − ' + S.settings.mealHrs + ' h meal); absent hours are calculated automatically.') +
+    `<div class="filters">
+      <label class="fld"><span>Date</span><div class="row" style="gap:4px"><button class="btn sm" id="aprev" aria-label="Previous day">◀</button><input type="date" class="inp" id="adate" value="${v.date}"><button class="btn sm" id="anext" aria-label="Next day">▶</button><button class="btn sm ghost" id="atoday">Today</button></div></label>
+      <label class="fld"><span>Team</span>${teamSelect('ateam', v.team, false)}</label>
+      <label class="fld"><span>Search</span><input class="inp" id="aq" placeholder="Agent name" value="${esc(v.q)}"></label>
+      <div class="spacer"></div>
+      <button class="btn" id="aallp" ${!editable || !working.length ? 'disabled' : ''}>✓ Mark not-submitted as Present</button>
+    </div>
+    ${noTeam ? `<div class="warnbox" style="margin-bottom:12px">Your account isn't linked to a team yet. Ask an RTA admin to set your team in Admin → Users.</div>` : ''}
+    <div class="row" style="margin-bottom:12px">
+      <span class="pill info"><span class="dot"></span>${D.fmt(v.date, {weekday: 'long', month: 'short', day: 'numeric', year: 'numeric'})}</span>
+      <span class="pill">Scheduled ${working.length}</span><span class="pill">Off ${off.length}</span>
+      <span class="pill ${z.unset ? 'warn' : 'ok'}"><span class="dot"></span>Not submitted ${z.unset}</span>
+      <span class="pill">Absent ${z.absentDays}</span><span class="pill">Sched ${num(z.schedHrs, 1)} h</span><span class="pill">Lost ${num(z.lostHrs, 2)} h</span>
+    </div>
+    ${lockMsg ? `<div class="warnbox" style="margin-bottom:12px">${lockMsg}</div>` : ''}
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="att-row" style="background:var(--card2);font-family:var(--mono);font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em"><div>Agent</div><div>Shift · paid hrs</div><div>Status</div><div>Minutes · note</div></div>
+      <div id="alist">${working.map(i => attRow(i, editable)).join('') || `<div class="empty" style="margin:14px"><b>No one scheduled</b>No agents in this team are scheduled on this day.</div>`}</div>
+    </div>
+    ${off.length ? `<details style="margin-top:12px" ${v.showOff ? 'open' : ''} id="aoff"><summary class="tx2" style="cursor:pointer">Off today (${off.length})</summary><div class="card" style="margin-top:8px">${off.map(i => `<span class="pill" style="margin:3px">${esc(shortName(i.agent.name))}${i.ov ? ' · changed' : ''}</span>`).join('')}</div></details>` : ''}
+    <div class="savebar ${dirtyN ? '' : 'hidden'}" id="asave"><b id="adn">${dirtyN} unsaved change(s)</b><span class="muted">Statuses are stamped with your name and time.</span><span class="spacer"></span><button class="btn ghost" id="adisc">Discard</button><button class="btn primary" id="adosave">Save statuses</button></div>`;
+
+  const go = async nd => { if (!(await attGuard())) { $('#adate').value = v.date; return; } v.date = nd; render(); };
+  $('#aprev').onclick = () => go(D.add(v.date, -1));
+  $('#anext').onclick = () => go(D.add(v.date, 1));
+  $('#atoday').onclick = () => go(TODAY);
+  $('#adate').onchange = e => e.target.value && go(e.target.value);
+  if (!$('#ateam').disabled) $('#ateam').onchange = async e => { if (!(await attGuard())) { e.target.value = v.team; return; } v.team = e.target.value; render(); };
+  $('#aq').oninput = e => { v.q = e.target.value; const p = e.target.selectionStart; render(); const el = $('#aq'); el.focus(); el.setSelectionRange(p, p); };
+  if ($('#aoff')) $('#aoff').ontoggle = e => v.showOff = e.target.open;
+  $('#aallp').onclick = () => { for (const i of working) { if (!canEditAgent(i.agent)) continue; const e = attEffective(i, v.dirty[i.key]); if (!e.status) v.dirty[i.key] = {status: 'PRESENT', mins: 0, note: ''}; } render(); };
+  $('#adisc').onclick = () => { v.dirty = {}; render(); };
+  $('#adosave').onclick = saveAtt;
+  $$('#alist .att-row').forEach(row => {
+    const key = row.dataset.key, a = S.idx.agent[key.split('|')[1]];
+    $$('.stbtns button', row).forEach(b => b.onclick = () => {
+      const i = dayInfo(a, v.date), cur = attEffective(i, v.dirty[key]);
+      const s = b.dataset.s;
+      if (cur.status === s && cur.src !== 'request') v.dirty[key] = i.rec ? {clear: true} : undefined;
+      else v.dirty[key] = {status: s, mins: ST[s].mins ? (cur.mins || 0) : 0, note: cur.note || ''};
+      if (!v.dirty[key]) delete v.dirty[key];
+      if (v.dirty[key] && !v.dirty[key].clear && i.rec && i.rec.status === v.dirty[key].status && (i.rec.mins || 0) === v.dirty[key].mins && (i.rec.note || '') === v.dirty[key].note) delete v.dirty[key];
+      row.outerHTML = attRow(dayInfo(a, v.date), editable); viewAttRewire(); updSave();
+      if (ST[s].mins && v.dirty[key]) { const m = $(`.att-row[data-key="${CSS.escape(key)}"] .minsin`); if (m) m.focus(); }
+    });
+    const mi = $('.minsin', row), no = $('.notein', row);
+    const edit = () => { const i = dayInfo(a, v.date), cur = attEffective(i, v.dirty[key]); if (!cur.status) return; v.dirty[key] = {status: cur.status, mins: mi ? Math.max(0, Math.min(600, +mi.value || 0)) : 0, note: no ? no.value.trim() : ''}; row.classList.add('dirty'); updSave(); };
+    if (mi) mi.oninput = edit; if (no) no.oninput = edit;
+  });
+  function updSave() { const n = Object.keys(v.dirty).length; $('#asave').classList.toggle('hidden', !n); $('#adn').textContent = n + ' unsaved change(s)'; }
+}
+function viewAttRewire() { const main = $('#main'); const y = window.scrollY; viewAtt(main); window.scrollTo(0, y); }
+function attRow(i, editable) {
+  const v = S.attv, d = v.dirty[i.key], e = attEffective(i, d), a = i.agent;
+  const can = editable && canEditAgent(a);
+  const btn = s => `<button data-s="${s}" class="${e.status === s ? 'on' : ''}" ${can ? '' : 'disabled'} aria-pressed="${e.status === s}">${ST[s].label}</button>`;
+  const needMins = e.status && ST[e.status].mins;
+  return `<div class="att-row ${d ? 'dirty' : ''}" data-key="${esc(i.key)}">
+    <div><div class="nm">${esc(a.name)}</div><div class="meta">${a.sme ? 'SME ' + esc(shortName(a.sme)) + ' · ' : ''}${esc(a.id)}${e.src === 'request' ? ` · <span class="tag" style="background:#14294A;color:#9cc4f5">Approved ${esc(i.lv.subtype)} ${esc(i.lv.id)}</span>` : ''}${i.rec && !d ? ` · <span title="${esc(i.rec.submitted_by)} · ${esc(String(i.rec.submitted_at).slice(0, 16).replace('T', ' '))}">✓ ${esc(String(i.rec.submitted_by || '').split('@')[0])}</span>` : ''}</div></div>
+    <div class="mono" style="font-size:12px">${esc(shortShift(i.shift))}<div class="meta">${i.hrs} h${i.ov ? ' · <span style="color:var(--cyan)">changed</span>' : ''}</div></div>
+    <div class="stbtns">${ST_ORDER.map(btn).join('')}</div>
+    <div class="row" style="gap:6px;flex-wrap:nowrap">${needMins ? `<input class="inp minsin" type="number" min="0" max="600" placeholder="min" value="${e.mins || ''}" ${can ? '' : 'disabled'} aria-label="Minutes">` : ''}<input class="inp notein" style="flex:1" placeholder="Note" value="${esc(e.note || '')}" ${can && e.status ? '' : 'disabled'} maxlength="200" aria-label="Note"></div>
+  </div>`;
+}
+async function saveAtt() {
+  const v = S.attv, recs = [], del = [];
+  for (const [key, d] of Object.entries(v.dirty)) {
+    const a = S.idx.agent[key.split('|')[1]];
+    if (d.clear) { if (S.att[key]) del.push(key); continue; }
+    if (ST[d.status].mins && !(d.mins > 0)) { toast(`Enter minutes for ${shortName(a.name)} (${ST[d.status].label}).`, 'err'); return; }
+    recs.push(makeAtt(a, v.date, d.status, d.mins, d.note));
+  }
+  const ok = await Store.saveAttendance(recs, del);
+  if (ok) {
+    await Store.audit('attendance_submit', {date: v.date, team: v.team, saved: recs.length, cleared: del.length});
+    v.dirty = {}; toast(`Saved ${recs.length} status(es) for ${D.fmt(v.date)}.`, 'ok'); render();
+  }
+}
+</script>
+
+<script>
+/* =====================================================================
+   REQUESTS (TL submit) + APPROVALS (RTA review)
+   PTO/LWOP requests block dates; swaps are stored as a generic list of
+   schedule changes [{agent,date,before,after}] applied on approval.
+   ===================================================================== */
+const SUBTYPE_LABEL = {PTO: 'PTO', LWOP: 'LWOP', AGENT_SWAP: 'Shift swap (2 agents)', SWAP_OFF: 'Swap OFF (2 agents trade rest days)', RESTDAY_SWAP: 'Rest-day swap', SHIFT_CHANGE: 'Shift time change'};
+function shiftLibrary() {
+  const set = new Set(); for (const a of S.agents) for (const s of (a.sched || [])) if (parseShift(s)) set.add(normShift(s));
+  for (const o of Object.values(S.ovr)) if (parseShift(o.shift)) set.add(normShift(o.shift));
+  return [...set].sort((x, y) => parseShift(x).start - parseShift(y).start || x.localeCompare(y));
+}
+function ptoCap(hc) { return hc ? Math.max(1, Math.floor(hc * S.settings.ptoCapPct)) : 0; }
+function ptoLoad(date, excludeId) {
+  let hc = 0, ap = 0, pe = 0;
+  for (const a of S.agents) { if (a.active === false) continue; const i = dayInfo(a, date); if (!i.working) continue; hc++; if (i.status === 'PTO' || i.status === 'LWOP') ap++; }
+  for (const r of S.reqs) if (r.kind === 'PTO' && r.status === 'Pending' && r.id !== excludeId && (r.dates || []).includes(date)) pe++;
+  return {hc, ap, pe, cap: ptoCap(hc)};
+}
+function reqConflicts(agentId, dates, excludeId) {
+  return S.reqs.filter(r => r.id !== excludeId && (r.status === 'Pending' || r.status === 'Approved') && (r.agent === agentId || r.agent2 === agentId) &&
+    ((r.dates || []).some(d => dates.includes(d)) || ((r.payload || {}).changes || []).some(c => c.agent === agentId && dates.includes(c.date))));
+}
+function reqDates(r) { return r.kind === 'PTO' ? (r.dates || []) : [...new Set(((r.payload || {}).changes || []).map(c => c.date))].sort(); }
+function reqSummary(r) {
+  const a = S.idx.agent[r.agent] || {name: r.agent}, b = r.agent2 ? (S.idx.agent[r.agent2] || {name: r.agent2}) : null;
+  const ds = reqDates(r);
+  const when = ds.length ? (ds.length === 1 ? D.fmt(ds[0]) : D.md(ds[0]) + ' – ' + D.md(ds[ds.length - 1]) + ` (${ds.length} day${ds.length > 1 ? 's' : ''})`) : D.md(r.start_date) + ' – ' + D.md(r.end_date) + ' (no scheduled days)';
+  return {a, b, when, title: SUBTYPE_LABEL[r.subtype] || r.subtype};
+}
+function changesTable(changes) {
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Agent</th><th>Date</th><th>Before</th><th></th><th>After</th><th class="num">Hrs Δ</th></tr></thead><tbody>${changes.map(c => {
+    const a = S.idx.agent[c.agent] || {name: c.agent}, dh = paidHrs(c.after) - paidHrs(c.before);
+    const now = S.idx.agent[c.agent] ? shiftOf(S.idx.agent[c.agent], c.date) : c.before;
+    const stale = normShift(now) !== normShift(c.before) && normShift(now) !== normShift(c.after);
+    return `<tr><td>${esc(shortName(a.name))}</td><td class="mono">${D.fmt(c.date)}</td><td class="mono">${esc(shortShift(c.before))}${stale ? ` <span class="st-warn" title="Schedule now shows ${esc(now)}">▲ now ${esc(shortShift(now))}</span>` : ''}</td><td class="arrow" style="color:var(--cyan)">→</td><td class="mono" style="color:var(--cyan)">${esc(shortShift(c.after))}</td><td class="num ${dh ? (dh > 0 ? 'st-good' : 'st-warn') : ''}">${dh > 0 ? '+' : ''}${num(dh, 1)}</td></tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+function weeklyHoursImpact(changes) {
+  const out = [];
+  const keys = new Set(changes.map(c => c.agent + '|' + D.weekStart(c.date)));
+  for (const k of keys) {
+    const [ag, ws] = k.split('|'); const a = S.idx.agent[ag]; if (!a) continue;
+    let before = 0, after = 0;
+    for (const d of D.range(ws, D.add(ws, 6))) { const ch = changes.find(c => c.agent === ag && c.date === d); const cur = shiftOf(a, d); before += paidHrs(ch ? ch.before : cur); after += paidHrs(ch ? ch.after : cur); }
+    out.push({a, ws, before, after});
+  }
+  return out;
+}
+function coverage(date, changes = []) {
+  const arr = new Array(24).fill(0);
+  for (const a of S.agents) {
+    if (a.active === false) continue;
+    const ch = changes.find(c => c.agent === a.id && c.date === date);
+    const p = parseShift(ch ? ch.after : shiftOf(a, date)); if (!p) continue;
+    const i = dayInfo(a, date); if (!ch && (i.status && !PRESENT_SET.has(i.status))) continue;
+    for (let h = 0; h < 24; h++) if (h * 60 >= p.start && h * 60 < Math.min(p.end, 1440)) arr[h]++;
+  }
+  return arr;
+}
+function coverageStrip(date, changes) {
+  const b = coverage(date, []), af = coverage(date, changes), mx = Math.max(1, ...af, ...b);
+  return `<div style="margin-top:6px"><div class="note">${D.fmt(date)} · agents on shift by hour (after change) · Δ vs before</div><div style="display:grid;grid-template-columns:repeat(24,1fr);gap:2px;margin-top:4px">${af.map((v, h) => {
+    const dl = v - b[h];
+    return `<div title="${String(h).padStart(2, '0')}:00 · ${v} on shift${dl ? ' (' + (dl > 0 ? '+' : '') + dl + ')' : ''}" style="text-align:center"><div style="height:34px;display:flex;align-items:flex-end"><div style="width:100%;height:${(v / mx * 100).toFixed(0)}%;background:${dl < 0 ? '#E23744' : dl > 0 ? '#3FCE8B' : '#2C3C5A'};border-radius:3px 3px 0 0;min-height:${v ? 2 : 0}px"></div></div><div class="mono" style="font-size:8.5px;color:var(--mut)">${h % 3 ? '' : h}</div><div class="mono" style="font-size:9px;${dl ? (dl > 0 ? 'color:var(--green)' : 'color:#ff6b75') : 'color:transparent'}">${dl > 0 ? '+' : ''}${dl || 0}</div></div>`;
+  }).join('')}</div></div>`;
+}
+function omMailto(a, subtype, dates, hrs, notice, reason, omName) {
+  const to = S.settings.omEmail || '';
+  const subj = `Short-notice ${subtype} approval — ${a.name} — ${dates.length ? D.md(dates[0]) + (dates.length > 1 ? ' to ' + D.md(dates[dates.length - 1]) : '') : ''}`;
+  const body = `Hi ${omName || 'Operations Manager'},\n\nRequesting approval for short-notice ${subtype}:\n\nAgent: ${a.name}\nTeam Lead: ${teamLabel(a.tl)}\nDates: ${dates.map(d => D.fmt(d)).join(', ')}\nWorking days: ${dates.length} (${num(hrs, 1)} paid hours)\nNotice given: ${notice} day(s) — policy goal is ${S.settings.ptoNoticeDays || 14} days\nReason: ${reason || '—'}\n\nPlease reply with your approval so RTA can process it in the OnTrac Attendance app.\n\nThank you.`;
+  return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+}
+function noticeInfo(r) {
+  const p = r.payload || {};
+  if (r.kind !== 'PTO' || p.imported) return '';
+  if (p.short_notice == null) return '';
+  if (!p.short_notice) return `<span class="pill ok">✓ ${p.notice_days} d notice</span>`;
+  const om = p.om || {};
+  return `<span class="pill warn">▲ Short notice · ${p.notice_days < 0 ? 'retro' : p.notice_days + ' d'} (goal ${p.notice_goal})</span>` + (om.confirmed ? `<span class="pill ok" title="${esc((om.ref || '') + (om.confirmed_by ? ' · confirmed by ' + om.confirmed_by : ''))}">✓ OM approved · ${esc(om.name || '')}</span>` : `<span class="pill err">✕ OM email not confirmed${om.name ? ' · ' + esc(om.name) : ''}</span>`);
+}
+function needsOM(r) { const p = r.payload || {}; return r.kind === 'PTO' && p.short_notice && !(p.om && p.om.confirmed); }
+function ptoImpactTable(r) {
+  const ds = r.dates || [];
+  if (!ds.length) return '<div class="note">No scheduled days in this range.</div>';
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Shift</th><th class="num">Paid h</th><th class="num">Sched HC</th><th class="num">Approved</th><th class="num">Pending</th><th class="num">Cap</th><th>Load</th></tr></thead><tbody>${ds.map(d => {
+    const a = S.idx.agent[r.agent], i = a ? dayInfo(a, d) : null, L = ptoLoad(d, r.id);
+    const isAp = r.status === 'Approved'; const tot = L.ap + L.pe + (isAp ? 0 : 1);
+    const over = tot > L.cap;
+    return `<tr><td class="mono">${D.fmt(d)}</td><td class="mono">${esc(i ? shortShift(i.shift) : '')}</td><td class="num">${i ? i.hrs : ''}</td><td class="num">${L.hc}</td><td class="num">${L.ap}</td><td class="num">${L.pe}</td><td class="num">${L.cap}</td><td>${over ? `<span class="st-bad">▲ ${tot}/${L.cap} over</span>` : `<span class="st-good">✓ ${tot}/${L.cap}</span>`}</td></tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+/* ---------------- Requests view ---------------- */
+function viewReq(main) {
+  const v = S.reqv;
+  const tabs = [['pto', 'New PTO / LWOP'], ['swap', 'New swap / schedule change'], ['list', 'Requests']];
+  main.innerHTML = head('Requests', 'Submit PTO and schedule swaps for your agents. RTA reviews and approves; approved changes update the schedule and attendance automatically.') +
+    `<div class="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${v.tab === k ? 'on' : ''}">${l}${k === 'list' ? ` <span class="muted">(${S.reqs.filter(r => r.status === 'Pending' && scopeAgents('ALL').some(a => a.id === r.agent)).length} pending)</span>` : ''}</button>`).join('')}</div><div id="rbody"></div>`;
+  $$('.tabs button', main).forEach(b => b.onclick = () => { v.tab = b.dataset.t; render(); });
+  ({pto: reqPtoForm, swap: reqSwapForm, list: reqList})[v.tab]($('#rbody'));
+}
+function reqPtoForm(el) {
+  const agents = scopeAgents('ALL');
+  if (!agents.length) { el.innerHTML = '<div class="empty"><b>No agents in your scope</b>Ask an RTA admin to link your account to a team.</div>'; return; }
+  const f = S.reqv.pto || (S.reqv.pto = {agent: agents[0].id, subtype: 'PTO', start: D.add(TODAY, 1), end: D.add(TODAY, 1), reason: ''});
+  if (!agents.some(a => a.id === f.agent)) f.agent = agents[0].id;
+  el.innerHTML = `<div class="dgrid"><div class="card c5"><h3>PTO / LWOP request</h3><div class="sub">Only scheduled working days are counted. Hours use the agent's paid shift hours.</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label class="fld"><span>Agent</span><select class="inp" id="p_ag">${agentOptions(agents, f.agent)}</select></label>
+      <label class="fld"><span>Leave type</span><div class="seg" id="p_ty"><button data-v="PTO" class="${f.subtype === 'PTO' ? 'on' : ''}">PTO (paid)</button><button data-v="LWOP" class="${f.subtype === 'LWOP' ? 'on' : ''}">LWOP (unpaid)</button></div></label>
+      <div class="grid2"><label class="fld"><span>From</span><input class="inp" type="date" id="p_s" value="${f.start}"></label><label class="fld"><span>To</span><input class="inp" type="date" id="p_e" value="${f.end}"></label></div>
+      <div id="p_notice"></div>
+      <label class="fld"><span>Reason</span><textarea class="inp" id="p_r" maxlength="400" placeholder="e.g. Family event — filed in HRIS">${esc(f.reason)}</textarea></label>
+      <div id="p_om"></div>
+      <button class="btn primary" id="p_go" style="justify-content:center">Submit for RTA approval</button>
+    </div></div>
+    <div class="card c7"><h3>Preview</h3><div class="sub">Dates, hours, and the team's PTO load against the daily cap (${pct(S.settings.ptoCapPct, 0)} of scheduled HC).</div><div id="p_prev"></div></div></div>`;
+  const upd = () => {
+    f.agent = $('#p_ag').value; f.start = $('#p_s').value; f.end = $('#p_e').value; f.reason = $('#p_r').value;
+    const a = S.idx.agent[f.agent], all = D.range(f.start, f.end);
+    const dates = all.filter(d => dayInfo(a, d).working), hrs = dates.reduce((s, d) => s + dayInfo(a, d).hrs, 0);
+    const conf = reqConflicts(a.id, dates);
+    const tagged = dates.filter(d => S.att[d + '|' + a.id]);
+    const warn = [];
+    if (!f.start || !f.end || f.end < f.start) warn.push(['err', 'End date must be on or after the start date.']);
+    else if (all.length > 45) warn.push(['err', 'Keep a single request to 45 days or fewer.']);
+    else if (!dates.length) warn.push(['err', 'No scheduled working days in this range — nothing to request.']);
+    if (f.start && f.start < TODAY) warn.push(['warn', 'Start date is in the past (retro request).']);
+    if (conf.length) warn.push(['err', 'Overlaps ' + conf.map(r => `${r.id} (${r.status})`).join(', ') + '.']);
+    if (tagged.length) warn.push(['warn', tagged.length + ' day(s) already have a submitted status; approval will not overwrite them.']);
+    const r = {id: 'NEW', kind: 'PTO', subtype: f.subtype, agent: a.id, dates, status: 'Pending'};
+    /* notice rule: goal = ptoNoticeDays (default 14) before the first day off */
+    const goal = +S.settings.ptoNoticeDays || 14, first = dates[0] || f.start, notice = first ? D.diff(TODAY, first) : null;
+    const short = notice != null && notice < goal;
+    if (!f.om) f.om = {name: S.settings.omName || '', confirmed: false, ref: ''};
+    $('#p_notice').innerHTML = notice == null ? '' : short
+      ? `<div class="warnbox"><b>▲ Short notice — ${notice < 0 ? 'retro request' : notice + ' day(s)'} (goal ${goal}).</b> The agent must email the Operations Manager for approval. RTA can only approve once the OM email is confirmed.</div>`
+      : `<div class="okbox">✓ ${notice} days' notice — meets the ${goal}-day goal. No Operations Manager email needed.</div>`;
+    if (short) {
+      const om = f.om;
+      if (!$('#p_omname')) {
+        $('#p_om').innerHTML = `<div class="preview" style="display:flex;flex-direction:column;gap:10px"><b style="font-size:13px">Operations Manager approval</b>
+          <div class="grid2"><label class="fld"><span>OM approver</span><input class="inp" id="p_omname" value="${esc(om.name)}" placeholder="Operations Manager name"></label>
+          <label class="fld"><span>Email reference</span><input class="inp" id="p_omref" value="${esc(om.ref)}" placeholder="Subject / date of approval email"></label></div>
+          <label class="row" style="gap:8px;font-size:12.5px"><input type="checkbox" id="p_omok" ${om.confirmed ? 'checked' : ''}> OM approval email received (leave unticked if the agent hasn't emailed yet — RTA can confirm later)</label>
+          <div class="row"><button class="btn sm" id="p_mail">✉ Draft email to Operations Manager</button><span class="note">Opens your mail app with the request pre-filled.</span></div></div>`;
+        $('#p_omname').oninput = e => om.name = e.target.value; $('#p_omref').oninput = e => om.ref = e.target.value; $('#p_omok').onchange = e => om.confirmed = e.target.checked;
+        $('#p_mail').onclick = e => { e.preventDefault(); const cur = upd(); window.location.href = omMailto(cur.a, f.subtype, cur.dates, cur.hrs, cur.notice, f.reason, om.name); };
+      }
+    } else $('#p_om').innerHTML = '';
+    $('#p_prev').innerHTML = `<div class="row" style="margin-bottom:10px"><span class="pill info">${dates.length} working day(s)</span><span class="pill">${num(hrs, 1)} paid h</span><span class="pill">${all.length - dates.length} off day(s) skipped</span></div>` +
+      warn.map(([k, m]) => `<div class="${k === 'err' ? 'errbox' : 'warnbox'}" style="margin-bottom:8px">${esc(m)}</div>`).join('') + (dates.length && all.length <= 45 ? ptoImpactTable(r) : '');
+    $('#p_go').disabled = warn.some(w => w[0] === 'err');
+    return {a, dates, hrs, notice, short, goal};
+  };
+  ['p_ag', 'p_s', 'p_e'].forEach(id => $('#' + id).onchange = upd); $('#p_r').oninput = () => f.reason = $('#p_r').value;
+  $$('#p_ty button').forEach(b => b.onclick = () => { f.subtype = b.dataset.v; $$('#p_ty button').forEach(x => x.classList.toggle('on', x === b)); });
+  upd();
+  $('#p_go').onclick = async () => {
+    const {a, dates, hrs, notice, short, goal} = upd(); if ($('#p_go').disabled) return;
+    if (!f.reason.trim()) { toast('Add a reason so RTA can review.', 'err'); $('#p_r').focus(); return; }
+    if (short && !String(f.om.name || '').trim()) { toast('Short-notice PTO: enter the Operations Manager approving it.', 'err'); $('#p_omname').focus(); return; }
+    if (short && f.om.confirmed && !String(f.om.ref || '').trim()) { toast('Add the OM email reference (subject or date).', 'err'); $('#p_omref').focus(); return; }
+    const notePayload = {notice_days: notice, notice_goal: goal, short_notice: short, ...(short ? {om: {name: f.om.name.trim(), confirmed: !!f.om.confirmed, ref: (f.om.ref || '').trim(), confirmed_by: f.om.confirmed ? S.user.email : null, confirmed_at: f.om.confirmed ? new Date().toISOString() : null}} : {})};
+    const r = {id: uid('PTO'), kind: 'PTO', subtype: f.subtype, agent: a.id, agent2: null, start_date: f.start, end_date: f.end, dates, payload: notePayload, reason: f.reason.trim(), status: 'Pending', hours: Math.round(hrs * 100) / 100, submitted_by: S.user.email, submitted_at: new Date().toISOString(), reviewed_by: null, reviewed_at: null, review_note: null};
+    if (await Store.saveRequest(r)) { await Store.audit('request_submit', {id: r.id, kind: 'PTO', agent: a.id}); toast(`${f.subtype} request ${r.id} submitted for ${shortName(a.name)}.`, 'ok'); S.reqv.pto = null; S.reqv.tab = 'list'; S.reqv.listFilter = 'Pending'; render(); }
+  };
+}
+function reqSwapForm(el) {
+  const agents = scopeAgents('ALL');
+  if (!agents.length) { el.innerHTML = '<div class="empty"><b>No agents in your scope</b>Ask an RTA admin to link your account to a team.</div>'; return; }
+  const all = S.agents.filter(a => a.active !== false).sort((a, b) => a.name.localeCompare(b.name));
+  const partners = isRTA() ? all : agents;
+  const f = S.reqv.swap || (S.reqv.swap = {subtype: 'AGENT_SWAP', a: agents[0].id, b: (agents[1] || agents[0]).id, date: D.add(TODAY, 1), workDate: D.add(TODAY, 1), offDate: D.add(TODAY, 2), offShift: '', offA: '', offB: '', from: D.add(TODAY, 1), to: D.add(TODAY, 1), newShift: '', reason: ''});
+  const lib = shiftLibrary();
+  const sOpt = (sel, withCustom) => `<option value="">— pick —</option>${lib.map(s => `<option ${normShift(sel) === s ? 'selected' : ''} value="${esc(s)}">${esc(s)} · ${paidHrs(s)} h</option>`).join('')}`;
+  el.innerHTML = `<div class="dgrid"><div class="card c5"><h3>Swap / schedule change</h3><div class="sub">Pick the change type. The preview shows the before → after schedule and weekly paid hours.</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label class="fld"><span>Change type</span><select class="inp" id="s_ty">${['AGENT_SWAP', 'SWAP_OFF', 'RESTDAY_SWAP', 'SHIFT_CHANGE'].map(k => `<option value="${k}" ${f.subtype === k ? 'selected' : ''}>${SUBTYPE_LABEL[k]}</option>`).join('')}</select></label>
+      <div id="s_fields"></div>
+      <label class="fld"><span>Reason</span><textarea class="inp" id="s_r" maxlength="400" placeholder="e.g. Agent requested to trade Saturday shift">${esc(f.reason)}</textarea></label>
+      <button class="btn primary" id="s_go" style="justify-content:center">Submit for RTA approval</button>
+    </div></div><div class="card c7"><h3>Preview</h3><div class="sub" id="s_hint"></div><div id="s_prev"></div></div></div>`;
+  const fields = () => {
+    const t = f.subtype, ag = (id, sel, list) => `<select class="inp" id="${id}">${agentOptions(list, sel)}</select>`;
+    $('#s_fields').innerHTML = t === 'AGENT_SWAP' ? `<label class="fld"><span>Agent A</span>${ag('s_a', f.a, agents)}</label><label class="fld"><span>Agent B (trades with A)</span>${ag('s_b', f.b, partners)}</label><label class="fld"><span>Date</span><input class="inp" type="date" id="s_d" value="${f.date}"></label>`
+      : t === 'SWAP_OFF' ? `<label class="fld"><span>Agent A</span>${ag('s_a', f.a, agents)}</label><label class="fld"><span>Agent B (trades rest days with A)</span>${ag('s_b', f.b, partners)}</label>
+        <label class="fld"><span>Day 1 · A takes OFF, B works A's shift</span><input class="inp" type="date" id="s_oa" value="${f.offA}"></label><div id="s_sa" class="row" style="gap:4px"></div>
+        <label class="fld"><span>Day 2 · B takes OFF, A works B's shift</span><input class="inp" type="date" id="s_ob" value="${f.offB}"></label><div id="s_sb" class="row" style="gap:4px"></div>`
+      : t === 'RESTDAY_SWAP' ? `<label class="fld"><span>Agent</span>${ag('s_a', f.a, agents)}</label><div class="grid2"><label class="fld"><span>Work day → becomes OFF</span><input class="inp" type="date" id="s_w" value="${f.workDate}"></label><label class="fld"><span>Rest day → becomes WORK</span><input class="inp" type="date" id="s_o" value="${f.offDate}"></label></div><label class="fld"><span>Shift on the new work day</span><select class="inp" id="s_os">${sOpt(f.offShift)}</select><span class="note" style="text-transform:none;letter-spacing:0;font-family:inherit">Blank = same shift as the work day it replaces.</span></label>`
+      : `<label class="fld"><span>Agent</span>${ag('s_a', f.a, agents)}</label><div class="grid2"><label class="fld"><span>From</span><input class="inp" type="date" id="s_f" value="${f.from}"></label><label class="fld"><span>To</span><input class="inp" type="date" id="s_t" value="${f.to}"></label></div><label class="fld"><span>New shift</span><select class="inp" id="s_ns">${sOpt(f.newShift)}</select></label><label class="fld"><span>…or type a custom shift</span><input class="inp" id="s_nc" placeholder="9:00 AM - 6:00 PM" value="${lib.includes(normShift(f.newShift)) ? '' : esc(f.newShift)}"></label>`;
+    $$('#s_fields input,#s_fields select').forEach(x => x.onchange = upd);
+    $('#s_hint').textContent = {AGENT_SWAP: 'A takes B’s shift and B takes A’s shift on the date (works for OFF ↔ working trades too).', SWAP_OFF: 'Two agents trade rest days: on Day 1 A is OFF and B covers A’s shift; on Day 2 B is OFF and A covers B’s shift. Each agent keeps the same number of work days. Chips show eligible dates in the next 21 days.', RESTDAY_SWAP: 'Moves a rest day within the agent’s schedule. Keep both dates in the same Sat–Fri week to keep weekly hours level.', SHIFT_CHANGE: 'Changes the shift time for working days in the range. Rest days stay OFF.'}[f.subtype];
+  };
+  const build = () => {
+    const t = f.subtype, err = [], warn = [], changes = [];
+    const A = S.idx.agent[f.a];
+    if (t === 'AGENT_SWAP') {
+      const B = S.idx.agent[f.b];
+      if (!B || B.id === A.id) err.push('Pick two different agents.');
+      else if (!f.date) err.push('Pick a date.');
+      else {
+        const sa = shiftOf(A, f.date), sb = shiftOf(B, f.date);
+        if (normShift(sa) === normShift(sb)) err.push('Both agents have the same schedule on that date — nothing to swap.');
+        changes.push({agent: A.id, date: f.date, before: sa || 'OFF', after: sb || 'OFF'}, {agent: B.id, date: f.date, before: sb || 'OFF', after: sa || 'OFF'});
+      }
+    } else if (t === 'SWAP_OFF') {
+      const B = S.idx.agent[f.b];
+      if (!B || B.id === A.id) err.push('Pick two different agents.');
+      else if (!f.offA || !f.offB) err.push('Pick both days (use the date chips for eligible days).');
+      else if (f.offA === f.offB) err.push('Day 1 and Day 2 must be different dates.');
+      else {
+        const a1 = shiftOf(A, f.offA), b1 = shiftOf(B, f.offA), a2 = shiftOf(A, f.offB), b2 = shiftOf(B, f.offB);
+        if (!parseShift(a1)) err.push(`Day 1: ${shortName(A.name)} must be working on ${D.md(f.offA)} (currently OFF).`);
+        if (parseShift(b1)) err.push(`Day 1: ${shortName(B.name)} must be OFF on ${D.md(f.offA)} (currently ${shortShift(b1)}).`);
+        if (!parseShift(b2)) err.push(`Day 2: ${shortName(B.name)} must be working on ${D.md(f.offB)} (currently OFF).`);
+        if (parseShift(a2)) err.push(`Day 2: ${shortName(A.name)} must be OFF on ${D.md(f.offB)} (currently ${shortShift(a2)}).`);
+        if (!err.length) {
+          changes.push({agent: A.id, date: f.offA, before: a1, after: 'OFF'}, {agent: B.id, date: f.offA, before: b1 || 'OFF', after: a1},
+                       {agent: B.id, date: f.offB, before: b2, after: 'OFF'}, {agent: A.id, date: f.offB, before: a2 || 'OFF', after: b2});
+          if (D.weekStart(f.offA) !== D.weekStart(f.offB)) warn.push('Days fall in different Sat–Fri weeks — each agent works 6 days one week and 4 the other.');
+        }
+      }
+    } else if (t === 'RESTDAY_SWAP') {
+      const sw = shiftOf(A, f.workDate), so = shiftOf(A, f.offDate);
+      if (!parseShift(sw)) err.push('The first date must be a scheduled work day.');
+      if (parseShift(so)) err.push('The second date must be a rest day (OFF).');
+      if (f.workDate === f.offDate) err.push('Pick two different dates.');
+      if (!err.length) {
+        const ns = f.offShift || sw;
+        changes.push({agent: A.id, date: f.workDate, before: sw, after: 'OFF'}, {agent: A.id, date: f.offDate, before: so || 'OFF', after: ns});
+        if (D.weekStart(f.workDate) !== D.weekStart(f.offDate)) warn.push('Dates fall in different Sat–Fri weeks — weekly paid hours will change.');
+      }
+    } else {
+      const ns = normShift(f.newShift);
+      if (!parseShift(ns)) err.push('Pick a new shift (or type one like 9:00 AM - 6:00 PM).');
+      else if (!f.from || !f.to || f.to < f.from) err.push('End date must be on or after the start date.');
+      else if (D.diff(f.from, f.to) > 30) err.push('Keep a shift change to 31 days or fewer.');
+      else for (const d of D.range(f.from, f.to)) { const cur = shiftOf(A, d); if (parseShift(cur) && normShift(cur) !== ns) changes.push({agent: A.id, date: d, before: cur, after: ns}); }
+      if (!err.length && !changes.length) err.push('No working days in the range would change.');
+    }
+    const dates = [...new Set(changes.map(c => c.date))];
+    if (dates.some(d => d < TODAY)) warn.push('Includes past dates (retro change).');
+    for (const ag of new Set(changes.map(c => c.agent))) {
+      const c = reqConflicts(ag, dates); if (c.length) err.push(`${shortName(S.idx.agent[ag].name)} already has ${c.map(r => r.id + ' (' + r.status + ')').join(', ')} on these dates.`);
+      for (const d of dates) { const i = dayInfo(S.idx.agent[ag], d); if (i.rec && changes.some(x => x.agent === ag && x.date === d)) warn.push(`${shortName(S.idx.agent[ag].name)} already has a ${ST[i.rec.status].label} status on ${D.md(d)}.`); }
+    }
+    return {changes, err, warn, dates};
+  };
+  const upd = () => {
+    f.subtype = $('#s_ty').value;
+    if ($('#s_a')) f.a = $('#s_a').value; if ($('#s_b')) f.b = $('#s_b').value; if ($('#s_d')) f.date = $('#s_d').value;
+    if ($('#s_oa')) f.offA = $('#s_oa').value; if ($('#s_ob')) f.offB = $('#s_ob').value;
+    if (f.subtype === 'SWAP_OFF') swapOffChips();
+    if ($('#s_w')) f.workDate = $('#s_w').value; if ($('#s_o')) f.offDate = $('#s_o').value; if ($('#s_os')) f.offShift = $('#s_os').value;
+    if ($('#s_f')) f.from = $('#s_f').value; if ($('#s_t')) f.to = $('#s_t').value;
+    if ($('#s_ns')) f.newShift = ($('#s_nc').value.trim() ? normShift($('#s_nc').value) : $('#s_ns').value);
+    const {changes, err, warn, dates} = build();
+    const wk = weeklyHoursImpact(changes);
+    $('#s_prev').innerHTML = err.map(m => `<div class="errbox" style="margin-bottom:8px">${esc(m)}</div>`).join('') + warn.map(m => `<div class="warnbox" style="margin-bottom:8px">${esc(m)}</div>`).join('') +
+      (changes.length ? changesTable(changes) + `<div class="row" style="margin-top:10px">${wk.map(w => `<span class="pill ${w.before === w.after ? '' : 'warn'}">${esc(shortName(w.a.name))} · WB ${D.md(w.ws)}: ${num(w.before, 1)} → ${num(w.after, 1)} h</span>`).join('')}</div>` + dates.slice(0, 3).map(d => coverageStrip(d, changes)).join('') : '');
+    $('#s_go').disabled = !!err.length;
+    return {changes, err, dates};
+  };
+  function swapOffChips() {
+    const A = S.idx.agent[f.a], B = S.idx.agent[f.b]; if (!A || !B || !$('#s_sa')) return;
+    const days = D.range(TODAY, D.add(TODAY, 20));
+    const chip = (d, key) => `<button class="btn sm ${f[key] === d ? 'primary' : ''}" data-k="${key}" data-d="${d}">${D.dname(d)} ${D.md(d)}</button>`;
+    const d1 = days.filter(d => parseShift(shiftOf(A, d)) && !parseShift(shiftOf(B, d)));
+    const d2 = days.filter(d => parseShift(shiftOf(B, d)) && !parseShift(shiftOf(A, d)));
+    $('#s_sa').innerHTML = d1.length ? d1.slice(0, 9).map(d => chip(d, 'offA')).join('') : `<span class="note">No day in the next 3 weeks where ${esc(shortName(A.name))} works and ${esc(shortName(B.name))} is OFF.</span>`;
+    $('#s_sb').innerHTML = d2.length ? d2.slice(0, 9).map(d => chip(d, 'offB')).join('') : `<span class="note">No day in the next 3 weeks where ${esc(shortName(B.name))} works and ${esc(shortName(A.name))} is OFF.</span>`;
+    $$('#s_sa button,#s_sb button').forEach(b => b.onclick = e => { e.preventDefault(); f[b.dataset.k] = b.dataset.d; $(b.dataset.k === 'offA' ? '#s_oa' : '#s_ob').value = b.dataset.d; upd(); });
+  }
+  $('#s_ty').onchange = () => { f.subtype = $('#s_ty').value; fields(); upd(); };
+  $('#s_r').oninput = () => f.reason = $('#s_r').value;
+  fields(); upd();
+  $('#s_go').onclick = async () => {
+    const {changes, err, dates} = upd(); if (err.length) return;
+    if (!f.reason.trim()) { toast('Add a reason so RTA can review.', 'err'); $('#s_r').focus(); return; }
+    const r = {id: uid('SWP'), kind: 'SWAP', subtype: f.subtype, agent: f.a, agent2: (f.subtype === 'AGENT_SWAP' || f.subtype === 'SWAP_OFF') ? f.b : null, start_date: dates[0], end_date: dates[dates.length - 1], dates,
+      payload: {changes}, reason: f.reason.trim(), status: 'Pending', hours: Math.round(changes.reduce((s, c) => s + paidHrs(c.after) - paidHrs(c.before), 0) * 100) / 100,
+      submitted_by: S.user.email, submitted_at: new Date().toISOString(), reviewed_by: null, reviewed_at: null, review_note: null};
+    if (await Store.saveRequest(r)) { await Store.audit('request_submit', {id: r.id, kind: 'SWAP', subtype: r.subtype}); toast(`${SUBTYPE_LABEL[r.subtype]} ${r.id} submitted.`, 'ok'); S.reqv.swap = null; S.reqv.tab = 'list'; S.reqv.listFilter = 'Pending'; render(); }
+  };
+}
+function reqCard(r, opts = {}) {
+  const s = reqSummary(r);
+  const mine = r.submitted_by === S.user.email;
+  return `<div class="req" data-id="${esc(r.id)}">
+    <div class="hd"><span class="tag" style="background:${r.kind === 'PTO' ? '#14294A;color:#9cc4f5' : '#102F2B;color:#7fe0c4'}">${esc(s.title)}</span><b>${esc(shortName(s.a.name))}${s.b ? ' ⇄ ' + esc(shortName(s.b.name)) : ''}</b><span class="muted">${esc(s.when)}</span>${noticeInfo(r)}<span class="spacer"></span>${statusTag(r.status)}<span class="mono muted" style="font-size:11px">${esc(r.id)}</span></div>
+    <dl class="kv"><dt>Team</dt><dd>${esc(teamLabel(s.a.tl))}</dd><dt>${r.kind === 'PTO' ? 'Hours' : 'Hours Δ'}</dt><dd>${num(r.hours, 1)} h</dd><dt>Reason</dt><dd>${esc(r.reason || '—')}</dd>
+      <dt>Submitted</dt><dd>${esc(r.submitted_by)} · ${esc(String(r.submitted_at).slice(0, 16).replace('T', ' '))}</dd>
+      ${r.reviewed_by ? `<dt>Reviewed</dt><dd>${esc(r.reviewed_by)} · ${esc(String(r.reviewed_at || '').slice(0, 16).replace('T', ' '))}${r.review_note ? ' — “' + esc(r.review_note) + '”' : ''}</dd>` : ''}</dl>
+    ${opts.detail ? `<div style="margin-top:12px">${r.kind === 'PTO' ? ptoImpactTable(r) : changesTable((r.payload || {}).changes || []) + reqDates(r).slice(0, 2).map(d => coverageStrip(d, (r.payload || {}).changes || [])).join('')}</div>` : ''}
+    <div class="row" style="margin-top:12px">
+      ${opts.review && r.status === 'Pending' ? `<input class="inp" style="flex:1;min-width:160px" placeholder="Note to TL (required to deny)" data-note>${needsOM(r) ? `<button class="btn" data-act="om">✉ Confirm OM email</button>` : ''}<button class="btn bad" data-act="deny">✕ Deny</button><button class="btn good" data-act="approve" ${needsOM(r) ? 'disabled title="Short notice: confirm the Operations Manager approval email first"' : ''}>✓ Approve</button>` : ''}
+      ${!opts.review && r.status === 'Pending' && needsOM(r) && (mine || isRTA()) ? `<button class="btn sm" data-act="om">✉ Confirm OM email</button>` : ''}
+      ${!opts.review && r.status === 'Pending' && (mine || isRTA()) ? `<button class="btn sm" data-act="cancel">Cancel request</button>` : ''}
+      ${!opts.detail ? `<button class="btn sm ghost" data-act="detail">Details</button>` : ''}
+      ${isRTA() && r.status === 'Approved' && opts.history ? `<button class="btn sm" data-act="revoke">Revoke approval</button>` : ''}
+    </div></div>`;
+}
+function wireReqCards(el, opts) {
+  $$('.req', el).forEach(c => {
+    const r = S.reqs.find(x => x.id === c.dataset.id);
+    $$('[data-act]', c).forEach(b => b.onclick = async () => {
+      const act = b.dataset.act, note = ($('[data-note]', c) || {}).value || '';
+      if (act === 'detail') return modal(r.id, reqCard(r, {detail: true}), [{label: 'Close'}], {wide: true});
+      if (act === 'cancel') { if (!(await confirmBox('Cancel request?', `Cancel ${esc(r.id)}?`, 'Cancel request', 'bad'))) return; await reviewReq(r, 'Cancelled', ''); }
+      if (act === 'om') return confirmOM(r);
+      if (act === 'approve') { if (needsOM(r)) { toast('Confirm the Operations Manager approval email first.', 'err'); return; } await reviewReq(r, 'Approved', note.trim()); }
+      if (act === 'deny') { if (!note.trim()) { toast('Add a note explaining the denial.', 'err'); $('[data-note]', c).focus(); return; } await reviewReq(r, 'Denied', note.trim()); }
+      if (act === 'revoke') { if (!(await confirmBox('Revoke approval?', `This restores the original schedule / removes the PTO for ${esc(r.id)}.`, 'Revoke', 'bad'))) return; await reviewReq(r, 'Cancelled', 'Approval revoked'); }
+    });
+  });
+}
+function confirmOM(r) {
+  const om = (r.payload || {}).om || {};
+  modal('Confirm Operations Manager approval', `<div class="tx2">${esc(r.id)} was filed with ${(r.payload || {}).notice_days} day(s) notice (goal ${(r.payload || {}).notice_goal}). Record the OM's approval email.</div>
+    <label class="fld"><span>OM approver</span><input class="inp" id="om_n" value="${esc(om.name || S.settings.omName || '')}"></label>
+    <label class="fld"><span>Email reference</span><input class="inp" id="om_r" value="${esc(om.ref || '')}" placeholder="Subject / date of the approval email"></label>`,
+    [{label: 'Cancel'}, {label: 'Confirm approval email', cls: 'primary', onClick: async () => {
+      const n = $('#om_n').value.trim(), ref = $('#om_r').value.trim();
+      if (!n || !ref) { toast('Enter the OM name and the email reference.', 'err'); return false; }
+      const upd = {...r, payload: {...(r.payload || {}), om: {name: n, ref, confirmed: true, confirmed_by: S.user.email, confirmed_at: new Date().toISOString()}}};
+      if (await Store.saveRequest(upd)) { await Store.audit('om_confirmed', {id: r.id, om: n}); toast('OM approval recorded.', 'ok'); render(); }
+    }}]);
+}
+async function reviewReq(r, status, note) {
+  const prev = r.status;
+  if (status === 'Approved' && r.kind === 'PTO') {
+    const over = (r.dates || []).filter(d => { const L = ptoLoad(d, r.id); return L.ap + 1 > L.cap; });
+    if (over.length && !(await confirmBox('Over the PTO cap', `Approving puts ${over.length} day(s) over the daily cap: ${over.map(D.md).join(', ')}. Approve anyway?`, 'Approve anyway'))) return;
+  }
+  const upd = {...r, status, reviewed_by: status === 'Cancelled' && prev === 'Pending' ? null : S.user.email, reviewed_at: status === 'Cancelled' && prev === 'Pending' ? null : new Date().toISOString(), review_note: note || r.review_note || null};
+  if (status === 'Cancelled' && prev === 'Pending') upd.review_note = 'Cancelled by ' + S.user.email;
+  const changes = (r.payload || {}).changes || [];
+  if (r.kind === 'SWAP' && status === 'Approved') {
+    const put = [], del = [];
+    for (const c of changes) { const a = S.idx.agent[c.agent]; if (!a) continue; const id = c.date + '|' + a.id; if (normShift(baseShift(a, c.date)) === normShift(c.after)) { if (S.ovr[id]) del.push(id); } else put.push({id, date: c.date, agent: a.id, shift: normShift(c.after), note: SUBTYPE_LABEL[r.subtype] + ' ' + r.id, req_id: r.id, created_by: S.user.email, created_at: new Date().toISOString()}); }
+    if (!(await Store.saveOverrides(put, del))) return;
+  }
+  if (r.kind === 'SWAP' && prev === 'Approved' && status === 'Cancelled') {
+    const put = [], del = [];
+    for (const c of changes) { const a = S.idx.agent[c.agent]; if (!a) continue; const id = c.date + '|' + a.id; if (normShift(baseShift(a, c.date)) === normShift(c.before)) { if (S.ovr[id]) del.push(id); } else put.push({id, date: c.date, agent: a.id, shift: normShift(c.before), note: 'Restored after revoking ' + r.id, req_id: null, created_by: S.user.email, created_at: new Date().toISOString()}); }
+    if (!(await Store.saveOverrides(put, del))) return;
+  }
+  if (await Store.saveRequest(upd)) { await Store.audit('request_' + status.toLowerCase(), {id: r.id, from: prev}); toast(`${r.id} ${status.toLowerCase()}.`, status === 'Denied' ? '' : 'ok'); render(); }
+}
+function reqList(el) {
+  const v = S.reqv, scope = new Set(scopeAgents('ALL').map(a => a.id));
+  const list = S.reqs.filter(r => scope.has(r.agent) || scope.has(r.agent2)).filter(r => v.listFilter === 'All' || r.status === v.listFilter).sort((a, b) => String(b.submitted_at).localeCompare(String(a.submitted_at)));
+  el.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg" id="rl_f">${['Pending', 'Approved', 'Denied', 'Cancelled', 'All'].map(s => `<button data-v="${s}" class="${v.listFilter === s ? 'on' : ''}">${s}</button>`).join('')}</div><span class="muted">${list.length} request(s)</span></div>` +
+    (list.map(r => reqCard(r, {history: true})).join('') || `<div class="empty"><b>No ${v.listFilter === 'All' ? '' : v.listFilter.toLowerCase()} requests</b>New PTO and swap requests appear here.</div>`);
+  $$('#rl_f button').forEach(b => b.onclick = () => { v.listFilter = b.dataset.v; render(); });
+  wireReqCards(el, {});
+}
+
+/* ---------------- Approvals view (RTA) ---------------- */
+function viewAppr(main) {
+  const v = S.appv;
+  const q = v.q.toLowerCase();
+  const match = r => (v.type === 'ALL' || r.kind === v.type) && (!q || [r.id, (S.idx.agent[r.agent] || {}).name, (S.idx.agent[r.agent2] || {}).name, r.submitted_by].join(' ').toLowerCase().includes(q));
+  const pend = S.reqs.filter(r => r.status === 'Pending' && match(r)).sort((a, b) => String(a.submitted_at).localeCompare(String(b.submitted_at)));
+  const hist = S.reqs.filter(r => r.status !== 'Pending' && match(r)).sort((a, b) => String(b.reviewed_at || b.submitted_at).localeCompare(String(a.reviewed_at || a.submitted_at)));
+  main.innerHTML = head('Approvals', 'Review PTO and schedule-change requests. Each card shows the PTO cap load or the before → after schedule and hourly coverage impact.') +
+    `<div class="tabs"><button data-t="queue" class="${v.tab === 'queue' ? 'on' : ''}">Queue (${pend.length})</button><button data-t="hist" class="${v.tab === 'hist' ? 'on' : ''}">History (${hist.length})</button></div>
+    <div class="filters" style="position:static"><label class="fld"><span>Type</span><div class="seg" id="ap_t">${[['ALL', 'All'], ['PTO', 'PTO / LWOP'], ['SWAP', 'Swaps']].map(([k, l]) => `<button data-v="${k}" class="${v.type === k ? 'on' : ''}">${l}</button>`).join('')}</div></label>
+      <label class="fld"><span>Search</span><input class="inp" id="ap_q" placeholder="Agent, request ID, submitter" value="${esc(v.q)}"></label></div>
+    <div id="ap_list">${(v.tab === 'queue' ? pend : hist).slice(0, 150).map(r => reqCard(r, {review: true, detail: v.tab === 'queue', history: v.tab === 'hist'})).join('') || `<div class="empty"><b>${v.tab === 'queue' ? 'Queue is clear' : 'No history yet'}</b>${v.tab === 'queue' ? 'New requests from Team Leads land here.' : ''}</div>`}</div>`;
+  $$('.tabs button', main).forEach(b => b.onclick = () => { v.tab = b.dataset.t; render(); });
+  $$('#ap_t button').forEach(b => b.onclick = () => { v.type = b.dataset.v; render(); });
+  $('#ap_q').onchange = e => { v.q = e.target.value; render(); };
+  wireReqCards($('#ap_list'), {review: true});
+}
+</script>
+
+<script>
+/* =====================================================================
+   SCHEDULE (weekly Sat–Fri) + HOURS REPORT
+   ===================================================================== */
+function viewSched(main) {
+  const v = S.sched;
+  if (!v.week) v.week = D.weekStart(TODAY);
+  const days = D.range(v.week, D.add(v.week, 6));
+  const agents = scopeAgents(v.team).filter(a => !v.q || a.name.toLowerCase().includes(v.q.toLowerCase()));
+  const daily = days.map(() => ({hc: 0, hrs: 0, pto: 0, off: 0}));
+  let rows = '';
+  for (const a of agents) {
+    let wk = 0;
+    const cells = days.map((d, k) => {
+      const i = dayInfo(a, d); wk += i.hrs;
+      if (i.working) { daily[k].hc++; daily[k].hrs += i.hrs; } else daily[k].off++;
+      const leave = i.status === 'PTO' || i.status === 'LWOP';
+      if (leave) daily[k].pto++;
+      const cls = ['sc', i.working ? '' : 'off', i.ov ? 'ovr' : '', leave ? 'lv' : '', isRTA() ? 'edit' : ''].join(' ');
+      const t = `${D.fmt(d)} · ${i.shift || 'no schedule'}${i.ov ? ' · changed: ' + (i.ov.note || '') : ''}${leave ? ' · ' + i.status : ''}`;
+      return `<td class="${cls}" data-a="${a.id}" data-d="${d}" title="${esc(t)}">${esc(i.working ? shortShift(i.shift) : 'OFF')}${leave ? `<div style="font-size:9.5px">${i.status}</div>` : ''}</td>`;
+    }).join('');
+    rows += `<tr><td><b style="font-size:12.5px">${esc(shortName(a.name))}</b><div class="muted" style="font-size:11px">${esc(teamLabel(a.tl))}</div></td>${cells}<td class="num"><b>${num(wk, 1)}</b></td></tr>`;
+  }
+  main.innerHTML = head('Schedule', 'Effective weekly schedule (Sat–Fri). Cyan outline = changed by an approved swap or RTA edit · blue = approved PTO/LWOP.' + (isRTA() ? ' Click a cell to change one day.' : ''),
+      `<button class="btn" id="sc_exp">⤓ Export week</button>`) +
+    `<div class="filters">
+      <label class="fld"><span>Week beginning (Sat)</span><div class="row" style="gap:4px"><button class="btn sm" id="sw_p" aria-label="Previous week">◀</button><input type="date" class="inp" id="sw_d" value="${v.week}"><button class="btn sm" id="sw_n" aria-label="Next week">▶</button><button class="btn sm ghost" id="sw_t">This week</button></div></label>
+      <label class="fld"><span>Team</span>${teamSelect('sw_team', v.team)}</label>
+      <label class="fld"><span>Search</span><input class="inp" id="sw_q" placeholder="Agent name" value="${esc(v.q)}"></label>
+    </div>
+    <div class="tbl-wrap" style="max-height:calc(100vh - 260px)"><table class="tbl sg"><thead><tr><th>Agent</th>${days.map(d => `<th style="text-align:center">${D.dname(d)}<br><span style="font-size:10px">${D.md(d)}</span></th>`).join('')}<th class="num">Paid h/wk</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="9" class="muted">No agents in scope.</td></tr>`}</tbody>
+    <tfoot><tr><td>Scheduled · OFF<div class="muted" style="font-size:10.5px;font-weight:400">HC ${agents.length} · paid hrs</div></td>${daily.map(x => `<td class="num" style="text-align:center">${x.hc} <span class="muted" style="font-weight:400">· ${x.off} OFF</span><div class="muted" style="font-size:10.5px;font-weight:400">${num(x.hrs, 0)} h${x.pto ? ' · ' + x.pto + ' PTO' : ''}</div></td>`).join('')}<td class="num">${num(daily.reduce((s, x) => s + x.hrs, 0), 1)}</td></tr></tfoot></table></div>`;
+  const setW = w => { v.week = D.weekStart(w); render(); };
+  $('#sw_p').onclick = () => setW(D.add(v.week, -7)); $('#sw_n').onclick = () => setW(D.add(v.week, 7)); $('#sw_t').onclick = () => setW(TODAY);
+  $('#sw_d').onchange = e => e.target.value && setW(e.target.value);
+  if (!$('#sw_team').disabled) $('#sw_team').onchange = e => { v.team = e.target.value; render(); };
+  $('#sw_q').onchange = e => { v.q = e.target.value; render(); };
+  $('#sc_exp').onclick = () => exportXlsx(`OnTrac_Schedule_WB_${v.week}.xlsx`, {Schedule: agents.map(a => { const o = {agent_id: a.id, agent: a.name, team_lead: a.tl || 'Unassigned', sme: a.sme || ''}; let t = 0; days.forEach(d => { const i = dayInfo(a, d); o[D.dname(d) + ' ' + d] = i.working ? normShift(i.shift) + ((i.status === 'PTO' || i.status === 'LWOP') ? ' [' + i.status + ']' : '') : 'OFF'; t += i.hrs; }); o.paid_hrs_week = t; return o; })});
+  if (isRTA()) $$('td.sc.edit').forEach(td => td.onclick = () => editDayShift(S.idx.agent[td.dataset.a], td.dataset.d));
+}
+function editDayShift(a, d) {
+  const cur = shiftOf(a, d), base = baseShift(a, d), lib = shiftLibrary();
+  modal(`${shortName(a.name)} · ${D.fmt(d)}`, `<div class="muted">Base pattern for ${D.dname(d)}: <b class="mono">${esc(base || '—')}</b>${S.ovr[d + '|' + a.id] ? ` · current change: <b class="mono">${esc(cur)}</b>` : ''}</div>
+    <label class="fld"><span>Shift for this day</span><select class="inp" id="ed_s"><option value="OFF" ${!parseShift(cur) ? 'selected' : ''}>OFF</option>${lib.map(s => `<option ${normShift(cur) === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+    <label class="fld"><span>…or custom shift</span><input class="inp" id="ed_c" placeholder="9:00 AM - 6:00 PM"></label>
+    <label class="fld"><span>Reason</span><input class="inp" id="ed_n" placeholder="e.g. Approved via email" maxlength="160"></label>
+    <div class="note">For TL-initiated changes, prefer a swap request so it's tracked through approval.</div>`,
+    [{label: 'Cancel'}, ...(S.ovr[d + '|' + a.id] ? [{label: 'Reset to base', onClick: async () => { await Store.saveOverrides([], [d + '|' + a.id]); await Store.audit('schedule_reset', {agent: a.id, date: d}); toast('Reset to base pattern.', 'ok'); render(); }}] : []),
+     {label: 'Save', cls: 'primary', onClick: async () => {
+       const c = $('#ed_c').value.trim(); const s = c ? normShift(c) : $('#ed_s').value;
+       if (s !== 'OFF' && !parseShift(s)) { toast('Shift format: 9:00 AM - 6:00 PM', 'err'); return false; }
+       const id = d + '|' + a.id;
+       if (normShift(s) === normShift(base)) await Store.saveOverrides([], S.ovr[id] ? [id] : []);
+       else await Store.saveOverrides([{id, date: d, agent: a.id, shift: s, note: 'RTA edit: ' + ($('#ed_n').value.trim() || 'no reason given'), req_id: null, created_by: S.user.email, created_at: new Date().toISOString()}]);
+       await Store.audit('schedule_edit', {agent: a.id, date: d, shift: s}); toast('Schedule updated.', 'ok'); render();
+     }}]);
+}
+
+function viewRep(main) {
+  const v = S.rep;
+  if (!v.from) { v.from = D.monthStart(TODAY); v.to = TODAY; }
+  const agents = scopeAgents(v.team), dates = D.range(v.from, v.to > TODAY ? TODAY : v.to);
+  const rows = agents.map(a => ({a, z: aggregate([a], dates)}));
+  const tot = aggregate(agents, dates);
+  const cols = [['Sched days', z => int(z.schedDays)], ['Sched hrs', z => num(z.schedHrs, 2)], ['Worked hrs', z => num(z.workedHrs, 2)], ['Late min', z => int(z.lateMins)], ['UT min', z => int(z.utMins)],
+    ['PTO days', z => int(z.cnt.PTO)], ['PTO hrs', z => num(z.hrs.PTO, 2)], ['LWOP hrs', z => num(z.hrs.LWOP, 2)], ['Personal hrs', z => num(z.hrs.PERSONAL, 2)], ['Medical days', z => int(z.cnt.MEDICAL)], ['Medical hrs', z => num(z.hrs.MEDICAL, 2)], ['NCNS hrs', z => num(z.hrs.NCNS, 2)],
+    ['Unplanned hrs', z => num(z.unplHrs, 2)], ['Planned hrs', z => num(z.planHrs, 2)], ['Not submitted', z => int(z.unset)], ['Attendance', z => pct(z.att)]];
+  main.innerHTML = head('Hours Report', 'Scheduled vs worked vs absent hours per agent, from the schedule and submitted statuses. Not-submitted days count as scheduled but not worked.',
+      `<button class="btn" id="rp_x">⤓ Excel (summary + daily)</button><button class="btn" id="rp_c">⤓ CSV</button>`) +
+    `<div class="filters"><label class="fld"><span>From</span><input type="date" class="inp" id="rp_f" value="${v.from}"></label><label class="fld"><span>To</span><input type="date" class="inp" id="rp_t" value="${v.to}"></label>
+      <label class="fld"><span>Quick</span><div class="seg" id="rp_q"><button data-q="MTD">MTD</button><button data-q="LM">Last month</button><button data-q="WK">This week</button><button data-q="LW">Last week</button></div></label>
+      <label class="fld"><span>Team</span>${teamSelect('rp_team', v.team)}</label></div>
+    <div class="kpis" style="grid-template-columns:repeat(6,minmax(0,1fr))">${[['Sched hrs', num(tot.schedHrs, 1)], ['Worked hrs', num(tot.workedHrs, 1)], ['Unplanned hrs', num(tot.unplHrs, 1)], ['Planned hrs', num(tot.planHrs, 1)], ['Late + UT min', int(tot.lateMins + tot.utMins)], ['Not submitted', int(tot.unset) + ' days']].map(([l, x]) => kpiTile(l, x, '', '', '')).join('')}</div>
+    <div class="tbl-wrap" style="max-height:calc(100vh - 330px)"><table class="tbl"><thead><tr><th>Agent</th><th>Team</th>${cols.map(c => `<th class="num">${c[0]}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(({a, z}) => `<tr><td><b style="font-size:12.5px">${esc(a.name)}</b></td><td class="tx2">${esc(teamLabel(a.tl))}</td>${cols.map(c => `<td class="num">${c[1](z)}</td>`).join('')}</tr>`).join('')}</tbody>
+    <tfoot><tr><td>Total</td><td>${agents.length} agents</td>${cols.map(c => `<td class="num">${c[1](tot)}</td>`).join('')}</tr></tfoot></table></div>
+    <p class="note">Paid hours = shift span − ${S.settings.mealHrs} h unpaid meal (shifts over 5 h). Absent hours = full paid shift for PTO, LWOP, Personal, Medical, NCNS; Late/Undertime = minutes ÷ 60.</p>`;
+  $('#rp_f').onchange = e => { v.from = e.target.value; if (v.to < v.from) v.to = v.from; render(); };
+  $('#rp_t').onchange = e => { v.to = e.target.value; if (v.to < v.from) v.from = v.to; render(); };
+  $$('#rp_q button').forEach(b => b.onclick = () => { const q = b.dataset.q, ws = D.weekStart(TODAY); [v.from, v.to] = q === 'MTD' ? [D.monthStart(TODAY), TODAY] : q === 'LM' ? [D.monthStart(D.add(D.monthStart(TODAY), -1)), D.add(D.monthStart(TODAY), -1)] : q === 'WK' ? [ws, TODAY] : [D.add(ws, -7), D.add(ws, -1)]; render(); });
+  if (!$('#rp_team').disabled) $('#rp_team').onchange = e => { v.team = e.target.value; render(); };
+  const summary = () => rows.map(({a, z}) => ({agent_id: a.id, agent: a.name, team_lead: a.tl || 'Unassigned', sme: a.sme || '', sched_days: z.schedDays, sched_hrs: +z.schedHrs.toFixed(2), worked_hrs: +z.workedHrs.toFixed(2), late_min: z.lateMins, undertime_min: z.utMins, pto_days: z.cnt.PTO, pto_hrs: +z.hrs.PTO.toFixed(2), medical_days: z.cnt.MEDICAL, lwop_hrs: +z.hrs.LWOP.toFixed(2), personal_hrs: +z.hrs.PERSONAL.toFixed(2), medical_hrs: +z.hrs.MEDICAL.toFixed(2), ncns_hrs: +z.hrs.NCNS.toFixed(2), unplanned_hrs: +z.unplHrs.toFixed(2), planned_hrs: +z.planHrs.toFixed(2), not_submitted_days: z.unset, attendance_pct: z.att == null ? '' : +(z.att * 100).toFixed(2)}));
+  $('#rp_c').onclick = () => download(`OnTrac_Hours_${v.from}_${v.to}.csv`, toCSV(summary()));
+  $('#rp_x').onclick = () => {
+    const daily = []; for (const a of agents) for (const x of dates) { const i = dayInfo(a, x); if (!i.working && !i.status) continue; daily.push({date: x, week_beginning: D.weekStart(x), agent_id: a.id, agent: a.name, team_lead: a.tl || 'Unassigned', shift: i.shift, sched_paid_hrs: i.hrs, status: i.status || (i.state === 'unset' ? 'NOT_SUBMITTED' : 'OFF'), source: i.src || '', minutes: i.mins || 0, lost_hrs: +i.lost.toFixed(2), worked_hrs: i.status ? +(i.hrs - i.lost).toFixed(2) : 0, submitted_by: i.rec ? i.rec.submitted_by : ''}); }
+    exportXlsx(`OnTrac_Hours_${v.from}_${v.to}.xlsx`, {Agent_Summary: summary(), Daily_Detail: daily});
+  };
+}
+</script>
+
+<script>
+/* =====================================================================
+   ADMIN — roster & base schedule, users, settings, data, audit
+   ===================================================================== */
+function viewAdmin(main) {
+  const v = S.adm;
+  const tabs = [['roster', 'Roster & schedule'], ['users', 'Users' + (S.profiles.filter(p => !p.approved).length ? ` (${S.profiles.filter(p => !p.approved).length} new)` : '')], ['settings', 'Settings & targets'], ['data', 'Data & Database'], ['audit', 'Audit log']];
+  if (!isAdmin() && ['users', 'settings', 'data'].includes(v.tab)) v.tab = 'roster';
+  main.innerHTML = head('Admin', isAdmin() ? 'Manage the roster, base schedules, user access, targets and the Database connection.' : 'RTA access: roster and base schedules. User access and settings need the Admin role.') +
+    `<div class="tabs">${tabs.filter(([k]) => isAdmin() || ['roster', 'audit'].includes(k)).map(([k, l]) => `<button data-t="${k}" class="${v.tab === k ? 'on' : ''}">${l}</button>`).join('')}</div><div id="admb"></div>`;
+  $$('.tabs button', main).forEach(b => b.onclick = () => { v.tab = b.dataset.t; render(); });
+  ({roster: admRoster, users: admUsers, settings: admSettings, data: admData, audit: admAudit})[v.tab]($('#admb'));
+}
+function admRoster(el) {
+  const v = S.adm, q = v.q.toLowerCase();
+  const list = S.agents.filter(a => !q || [a.name, a.tl, a.sme, a.id].join(' ').toLowerCase().includes(q)).sort((a, b) => (a.active === false) - (b.active === false) || norm(a.tl).localeCompare(norm(b.tl)) || a.name.localeCompare(b.name));
+  el.innerHTML = `<div class="row" style="margin-bottom:12px"><input class="inp" id="ar_q" placeholder="Search name, team, SME, ID" value="${esc(v.q)}" style="min-width:260px"><span class="muted">${S.agents.filter(a => a.active !== false).length} active · ${S.agents.filter(a => a.active === false).length} inactive</span><span class="spacer"></span>
+    <button class="btn" id="ar_imp">⤒ Import CSV</button><button class="btn" id="ar_exp">⤓ Export CSV</button><button class="btn primary" id="ar_add">+ Add agent</button></div>
+    <div class="tbl-wrap" style="max-height:calc(100vh - 280px)"><table class="tbl sg"><thead><tr><th>ID</th><th>Agent</th><th>Team Lead</th><th>SME</th>${DAYS.map(d => `<th style="text-align:center">${d}</th>`).join('')}<th class="num">h/wk</th><th></th></tr></thead><tbody>
+    ${list.map(a => `<tr style="${a.active === false ? 'opacity:.5' : ''}"><td class="mono muted">${esc(a.id)}</td><td><b style="font-size:12.5px">${esc(a.name)}</b>${a.active === false ? ' <span class="pill">inactive</span>' : ''}</td><td class="tx2">${esc(teamLabel(a.tl))}</td><td class="tx2">${esc(a.sme ? shortName(a.sme) : '—')}</td>
+      ${(a.sched || []).map(s => `<td class="sc ${parseShift(s) ? '' : 'off'}">${esc(parseShift(s) ? shortShift(s) : (s || '—'))}</td>`).join('')}<td class="num">${num((a.sched || []).reduce((t, s) => t + paidHrs(s), 0), 1)}</td><td><button class="btn sm" data-ed="${esc(a.id)}">Edit</button></td></tr>`).join('')}
+    </tbody></table></div><p class="note">Base pattern runs Saturday → Friday. Day-specific changes (swaps, RTA edits) live on the Schedule page and don't alter this pattern.</p>`;
+  $('#ar_q').onchange = e => { v.q = e.target.value; render(); };
+  $('#ar_add').onclick = () => editAgent(null);
+  $$('[data-ed]', el).forEach(b => b.onclick = () => editAgent(S.idx.agent[b.dataset.ed]));
+  $('#ar_exp').onclick = () => download('OnTrac_Roster.csv', toCSV(S.agents.map(a => ({id: a.id, name: a.name, tl: a.tl, sme: a.sme, active: a.active !== false ? 'Y' : 'N', ...Object.fromEntries(DAYS.map((d, k) => [d.toLowerCase(), (a.sched || [])[k] || '']))}))));
+  $('#ar_imp').onclick = importRoster;
+}
+function nextAgentId() { const n = Math.max(0, ...S.agents.map(a => +String(a.id).replace(/\D/g, '') || 0)) + 1; return 'A' + String(n).padStart(3, '0'); }
+function editAgent(a) {
+  const isNew = !a; a = a || {id: nextAgentId(), name: '', tl: '', sme: '', active: true, sched: ['OFF', 'OFF', '', '', '', '', '']};
+  const lib = shiftLibrary(), tls = teams().filter(t => t.key);
+  const sel = (k, s) => `<select class="inp" data-day="${k}"><option value="OFF" ${!parseShift(s) ? 'selected' : ''}>OFF</option>${lib.map(x => `<option ${normShift(s) === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}${parseShift(s) && !lib.includes(normShift(s)) ? `<option selected>${esc(normShift(s))}</option>` : ''}</select>`;
+  modal(isNew ? 'Add agent' : 'Edit ' + shortName(a.name), `<div class="grid2"><label class="fld"><span>Agent name (LAST, FIRST MIDDLE)</span><input class="inp" id="ea_n" value="${esc(a.name)}"></label><label class="fld"><span>ID</span><input class="inp mono" id="ea_id" value="${esc(a.id)}" ${isNew ? '' : 'disabled'}></label></div>
+    <div class="grid2"><label class="fld"><span>Team Lead</span><select class="inp" id="ea_tl"><option value="">Unassigned</option>${tls.map(t => `<option value="${esc(t.name)}" ${norm(t.name) === norm(a.tl) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}<option value="__new">+ New team lead…</option></select><input class="inp hidden" id="ea_tln" placeholder="LAST, FIRST MIDDLE" style="margin-top:6px"></label>
+      <label class="fld"><span>SME</span><input class="inp" id="ea_sme" value="${esc(a.sme || '')}" placeholder="LAST, FIRST"></label></div>
+    <div><div class="note" style="margin-bottom:6px">Base weekly pattern (Sat → Fri)</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">${DAYS.map((d, k) => `<label class="fld"><span>${d}</span>${sel(k, (a.sched || [])[k])}</label>`).join('')}</div></div>
+    <label class="row" style="gap:8px"><input type="checkbox" id="ea_act" ${a.active !== false ? 'checked' : ''}> Active (inactive agents drop out of HC, dashboards and tagging)</label>`, [
+    {label: 'Cancel'}, {label: isNew ? 'Add agent' : 'Save', cls: 'primary', onClick: async () => {
+      const name = $('#ea_n').value.trim().toUpperCase(); if (!name) { toast('Name is required.', 'err'); return false; }
+      const id = $('#ea_id').value.trim().toUpperCase(); if (isNew && S.idx.agent[id]) { toast('That ID already exists.', 'err'); return false; }
+      let tl = $('#ea_tl').value; if (tl === '__new') tl = $('#ea_tln').value.trim().toUpperCase();
+      const upd = {...a, id, name, tl, sme: $('#ea_sme').value.trim().toUpperCase(), active: $('#ea_act').checked, sched: $$('[data-day]').sort((x, y) => x.dataset.day - y.dataset.day).map(s => s.value), updated_by: S.user.email, updated_at: new Date().toISOString()};
+      if (await Store.saveAgents([upd])) { await Store.audit(isNew ? 'agent_add' : 'agent_edit', {id}); toast('Roster saved.', 'ok'); render(); }
+    }}]);
+  $('#ea_tl').onchange = e => $('#ea_tln').classList.toggle('hidden', e.target.value !== '__new');
+}
+function parseCSV(t) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < t.length; i++) { const c = t[i];
+    if (q) { if (c === '"' && t[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
+    else if (c === '"') q = true; else if (c === ',') { row.push(cur); cur = ''; } else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; } else cur += c; }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+function importRoster() {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.csv,text/csv';
+  inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    const rows = parseCSV(await f.text()); const h = rows.shift().map(x => x.trim().toLowerCase());
+    const ix = k => h.indexOf(k);
+    if (ix('name') < 0) { toast('CSV needs a "name" column (plus tl, sme, sat…fri).', 'err'); return; }
+    const byName = Object.fromEntries(S.agents.map(a => [norm(a.name), a]));
+    const out = []; let nid = +nextAgentId().slice(1);
+    for (const r of rows) {
+      const name = norm(r[ix('name')]); if (!name) continue;
+      const ex = byName[name] || {id: 'A' + String(nid++).padStart(3, '0'), name, tl: '', sme: '', active: true, sched: ['', '', '', '', '', '', '']};
+      const sched = DAYS.map((d, k) => ix(d.toLowerCase()) >= 0 ? normShift(r[ix(d.toLowerCase())]) || 'OFF' : ex.sched[k]);
+      out.push({...ex, name, tl: ix('tl') >= 0 ? norm(r[ix('tl')]) : ex.tl, sme: ix('sme') >= 0 ? norm(r[ix('sme')]) : ex.sme, active: ix('active') >= 0 ? !/^n/i.test(r[ix('active')]) : ex.active !== false, sched});
+    }
+    if (!(await confirmBox('Import roster', `Update or add <b>${out.length}</b> agent(s) from ${esc(f.name)}?`, 'Import'))) return;
+    if (await Store.saveAgents(out)) { await Store.audit('roster_import', {rows: out.length}); toast(out.length + ' agents imported.', 'ok'); render(); }
+  };
+  inp.click();
+}
+function admUsers(el) {
+  const tls = teams().filter(t => t.key);
+  const list = [...S.profiles].sort((a, b) => (a.approved - b.approved) || String(a.email).localeCompare(b.email));
+  el.innerHTML = `<div class="note" style="margin-bottom:10px">New sign-ups appear here unapproved. Approve them, set the role, and for Team Leads link the roster team so they only see and tag their own agents.</div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Requested</th><th>Role</th><th>Team (TL scope)</th><th>Approved</th><th></th></tr></thead><tbody>
+    ${list.map(p => `<tr data-id="${esc(p.id)}"><td><b>${esc(p.full_name || '—')}</b><div class="muted mono" style="font-size:11px">${esc(p.email)}</div></td><td class="tx2">${esc(p.requested_role || '—')}${p.tl_name && !tls.some(t => norm(t.name) === norm(p.tl_name)) ? `<div class="st-warn" style="font-size:11px">▲ “${esc(p.tl_name)}” not in roster</div>` : ''}</td>
+      <td><select class="inp" data-f="role">${['TL', 'RTA', 'ADMIN'].map(r => `<option ${p.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>
+      <td><select class="inp" data-f="tl"><option value="">—</option>${tls.map(t => `<option value="${esc(t.name)}" ${norm(t.name) === norm(p.tl_name) ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></td>
+      <td><input type="checkbox" data-f="ap" ${p.approved ? 'checked' : ''} aria-label="Approved"></td>
+      <td class="row" style="flex-wrap:nowrap"><button class="btn sm primary" data-save>Save</button>${p.id !== S.user.id ? '<button class="btn sm ghost" data-del>Remove</button>' : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No users yet.</td></tr>'}
+    </tbody></table></div>`;
+  $$('tr[data-id]', el).forEach(tr => {
+    const p = S.profiles.find(x => x.id === tr.dataset.id);
+    $('[data-save]', tr).onclick = async () => {
+      const upd = {...p, role: $('[data-f=role]', tr).value, tl_name: $('[data-f=tl]', tr).value || null, approved: $('[data-f=ap]', tr).checked};
+      if (upd.role === 'TL' && upd.approved && !upd.tl_name) { toast('Link a team for Team Lead accounts.', 'err'); return; }
+      if (p.id === S.user.id && upd.role !== 'ADMIN') { toast("You can't remove your own Admin role.", 'err'); return; }
+      if (await Store.saveProfile(upd)) { await Store.audit('user_update', {email: p.email, role: upd.role, approved: upd.approved}); toast('User updated.', 'ok'); render(); }
+    };
+    const del = $('[data-del]', tr); if (del) del.onclick = async () => { if (await confirmBox('Remove user?', `Remove ${esc(p.email)}'s profile? They'll need to sign up again.`, 'Remove', 'bad')) { await Store.deleteProfile(p.id); await Store.audit('user_remove', {email: p.email}); render(); } };
+  });
+}
+function admSettings(el) {
+  const s = S.settings;
+  const f = (id, l, val, unit, step = 1, hint = '') => `<label class="fld"><span>${l}</span><div class="row" style="gap:6px;flex-wrap:nowrap"><input class="inp" type="number" id="${id}" value="${val}" step="${step}" min="0" style="width:110px">${unit ? `<b class="muted">${unit}</b>` : ''}</div>${hint ? `<span class="note" style="text-transform:none;letter-spacing:0;font-family:inherit">${hint}</span>` : ''}</label>`;
+  el.innerHTML = `<div class="dgrid"><div class="card c6"><h3>Hours & targets</h3><div class="sub">Defaults are working assumptions — set them to OnTrac's contract targets.</div>
+    <div class="grid2">${f('st_meal', 'Unpaid meal deduction', s.mealHrs, 'h', 0.25, 'Subtracted from shifts longer than 5 h. 9-h span → 8 paid h.')}${f('st_lock', 'TL edit window', s.lockDays, 'days back', 1, 'Older days need an RTA.')}
+    ${f('st_att', 'Attendance goal', +(s.attTarget * 100).toFixed(2), '%', 0.5)}${f('st_unpl', 'Unplanned shrink ceiling', +(s.unplTarget * 100).toFixed(2), '%', 0.5)}
+    ${f('st_plan', 'Planned shrink ceiling', +(s.planTarget * 100).toFixed(2), '%', 0.5)}${f('st_cap', 'Daily PTO cap', +(s.ptoCapPct * 100).toFixed(2), '% of sched HC', 0.5, 'Used to flag PTO requests on busy days.')}
+    ${f('st_notice', 'PTO notice goal', s.ptoNoticeDays || 14, 'days', 1, 'Less notice needs Operations Manager email approval.')}</div>
+    <div class="grid2" style="margin-top:12px"><label class="fld"><span>Operations Manager name</span><input class="inp" id="st_omn" value="${esc(s.omName || '')}"></label><label class="fld"><span>Operations Manager email</span><input class="inp" type="email" id="st_ome" value="${esc(s.omEmail || '')}" placeholder="Pre-fills the short-notice email"></label></div>
+    <label class="fld" style="margin-top:12px"><span>Go-live date</span><input class="inp" type="date" id="st_gl" value="${esc(s.goLive || '')}" style="width:180px"><span class="note" style="text-transform:none;letter-spacing:0;font-family:inherit">Scheduled days before this aren't counted as "not submitted".</span></label>
+    <label class="fld" style="margin-top:12px"><span>Allowed sign-up email domains</span><input class="inp" id="st_dom" value="${esc((s.allowedDomains || []).join(', '))}"><span class="note" style="text-transform:none;letter-spacing:0;font-family:inherit">Comma-separated. Enforced by the Database on sign-up.</span></label>
+    <div class="row" style="margin-top:14px"><button class="btn primary" id="st_save">Save settings</button></div></div>
+    <div class="card c6"><h3>Metric definitions</h3><div class="sub">Every number in the app is calculated this way.</div><dl class="kv" style="grid-template-columns:150px 1fr;gap:8px 14px">
+      <dt>Paid hours</dt><dd>Shift span − meal deduction (if span &gt; 5 h)</dd>
+      <dt>Scheduled</dt><dd>Agent has a working shift that day (base pattern, unless changed by an approved swap or RTA edit)</dd>
+      <dt>Attendance %</dt><dd>(Scheduled − Absent) ÷ Scheduled agent-days (tracker logic). Absent = PTO, LWOP, Personal, Medical, NCNS; Late/UT count as present</dd>
+      <dt>Unplanned shrink</dt><dd>(Personal + Medical + NCNS paid hrs + Late/UT minutes ÷ 60) ÷ scheduled paid hrs</dd>
+      <dt>Planned shrink</dt><dd>(PTO + LWOP paid hrs) ÷ scheduled paid hrs</dd>
+      <dt>Submission %</dt><dd>Agent-days with a status ÷ (with a status + not submitted), from go-live through today</dd>
+      <dt>PTO notice</dt><dd>Days between submission and the first PTO day. Below the goal (${s.ptoNoticeDays || 14} d) → agent emails the Operations Manager; RTA approval unlocks once the OM email is confirmed</dd>
+      <dt>PTO cap</dt><dd>max(1, ⌊scheduled HC × cap %⌋) per day; approved + pending compared against it</dd>
+      <dt>Projected shrink</dt><dd>(approved PTO hrs + trailing-28-day unplanned % × scheduled hrs) ÷ scheduled hrs</dd>
+      <dt>Bradford factor</dt><dd>Spells² × days of Personal/Medical/NCNS in range; consecutive scheduled days = one spell</dd>
+      <dt>Week</dt><dd>Saturday → Friday (matches the tracker's WB column)</dd></dl></div></div>`;
+  $('#st_save').onclick = async () => {
+    const g = id => +$('#' + id).value;
+    const st = {mealHrs: g('st_meal'), lockDays: Math.round(g('st_lock')), attTarget: g('st_att') / 100, unplTarget: g('st_unpl') / 100, planTarget: g('st_plan') / 100, ptoCapPct: g('st_cap') / 100, ptoNoticeDays: Math.max(0, Math.round(g('st_notice'))), omName: $('#st_omn').value.trim(), omEmail: $('#st_ome').value.trim(), goLive: $('#st_gl').value || '',
+      allowedDomains: $('#st_dom').value.split(',').map(x => x.trim().toLowerCase().replace(/^@/, '')).filter(Boolean)};
+    if ([st.attTarget, st.unplTarget, st.planTarget, st.ptoCapPct].some(x => !(x >= 0 && x <= 1))) { toast('Percentages must be between 0 and 100.', 'err'); return; }
+    _shCache.clear();
+    if (await Store.saveSettings(st)) { await Store.audit('settings_update', st); toast('Settings saved.', 'ok'); render(); }
+  };
+}
+function admData(el) {
+  const conn = lsGet(LS_CONN) || {};
+  const cfgLive = !/PASTE/.test(CONFIG.DB_URL + CONFIG.DB_KEY);
+  el.innerHTML = `<div class="dgrid"><div class="card c6"><div class="cardhead"><div><h3>Database connection</h3><div class="sub">Shared, real-time data for every TL and RTA, with email sign-in.</div></div><span id="dbpill2"></span></div>
+    ${cfgLive ? `<div class="okbox">Connection is set in the file's CONFIG block.</div>` : `
+    <div style="display:flex;flex-direction:column;gap:10px"><label class="fld"><span>Project URL</span><input class="inp mono" id="cn_u" value="${esc(conn.url || '')}" placeholder="https://xxxx.supabase.co"></label>
+    <label class="fld"><span>Public (anon) key</span><input class="inp mono" id="cn_k" value="${esc(conn.key || '')}" placeholder="eyJhbGciOi…"></label>
+    <div class="note">Saved in this browser only. For everyone else, paste the same two values into the CONFIG block at the top of the HTML file before you deploy it.</div>
+    <div class="row"><button class="btn primary" id="cn_go">Connect & reload</button>${S.mode === 'live' ? '<button class="btn" id="cn_off">Disconnect (back to demo)</button>' : ''}</div></div>`}</div>
+    <div class="card c6"><h3>Tracker data</h3><div class="sub">${SEED ? `Roster (${SEED.agents.length} agents), Sat–Fri patterns` : 'Roster, Sat–Fri patterns'}, October schedule changes and Leave-tab requests embedded from <span class="mono">Ontrac Attendance Tracker 2.xlsx</span>.</div>
+    ${S.mode === 'live' && !SEED ? `<div class="okbox">Tracker roster, schedules and Leave requests are already loaded in the Database. Use Roster & schedule to add or edit agents.</div>` : S.mode === 'live' ? `<button class="btn primary" id="sd_live">Load tracker data into Database</button><div class="note" style="margin-top:8px">Upserts agents and imported requests by ID — safe to re-run. Run once after creating the tables.</div>`
+      : `<div class="row"><button class="btn" id="sd_reset">Reset demo data</button><button class="btn" id="sd_clear">Clear sample attendance</button><button class="btn" id="sd_samp">Load sample attendance</button></div>`}
+    <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px"><h3 style="font-size:13px">Backup</h3><div class="row" style="margin-top:8px"><button class="btn" id="bk_x">⤓ Export full backup (JSON)</button>${S.mode === 'demo' ? '<button class="btn" id="bk_i">⤒ Restore backup</button>' : ''}</div></div></div></div>`;
+  const p2 = $('#dbpill2'); p2.innerHTML = S.mode === 'demo' ? '<span class="pill warn"><span class="dot"></span>Demo mode</span>' : '<span class="pill ok"><span class="dot"></span>Live</span>';
+  if ($('#cn_go')) $('#cn_go').onclick = () => { const url = $('#cn_u').value.trim().replace(/\/$/, ''), key = $('#cn_k').value.trim(); if (!/^https:\/\//.test(url) || key.length < 30) { toast('Enter the https project URL and the public key.', 'err'); return; } lsSet(LS_CONN, {url, key}); location.reload(); };
+  if ($('#cn_off')) $('#cn_off').onclick = async () => { if (await confirmBox('Disconnect?', 'This browser goes back to demo mode. Shared data stays in the Database.', 'Disconnect', 'bad')) { lsDel(LS_CONN); try { await S.sb.auth.signOut(); } catch (e) {} location.reload(); } };
+  if ($('#sd_live')) $('#sd_live').onclick = async () => { if (await confirmBox('Load tracker data?', 'Upsert the embedded roster, schedule changes and Leave requests into the Database?', 'Load')) { if (await Store.seedLive()) { await Store.audit('seed_live', {}); toast('Tracker data loaded.', 'ok'); render(); } } };
+  if ($('#sd_reset')) $('#sd_reset').onclick = async () => { if (await confirmBox('Reset demo data?', 'Restores the tracker roster and clears every status, request and change made in this browser.', 'Reset', 'bad')) { lsDel(LS_DATA); await Store.initDemo(); S.user = S.profiles.find(p => p.id === S.user.id) || S.profiles[0]; toast('Demo data reset.', 'ok'); render(); } };
+  if ($('#sd_clear')) $('#sd_clear').onclick = async () => { const ids = Object.values(S.att).filter(r => r.src === 'sample').map(r => r.id); await Store.saveAttendance([], ids); toast(ids.length + ' sample statuses removed.', 'ok'); render(); };
+  if ($('#sd_samp')) $('#sd_samp').onclick = () => demoSample();
+  $('#bk_x').onclick = () => download(`OnTrac_Attendance_Backup_${TODAY}.json`, JSON.stringify(snapshot(), null, 1), 'application/json');
+  if ($('#bk_i')) $('#bk_i').onclick = () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json'; inp.onchange = async () => { try { const o = JSON.parse(await inp.files[0].text()); if (!o.agents) throw new Error('Not a backup file'); hydrate(o); Store.persistDemo(); toast('Backup restored.', 'ok'); render(); } catch (e) { toast('Restore failed: ' + e.message, 'err'); } }; inp.click(); };
+}
+function admAudit(el) {
+  el.innerHTML = `<div class="tbl-wrap" style="max-height:calc(100vh - 240px)"><table class="tbl"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>${S.audit.slice(0, 300).map(a => `<tr><td class="mono" style="white-space:nowrap">${esc(String(a.ts).slice(0, 19).replace('T', ' '))}</td><td>${esc(a.actor)}</td><td class="mono">${esc(a.action)}</td><td class="mono muted" style="font-size:11px">${esc(JSON.stringify(a.detail || {}))}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No activity yet.</td></tr>'}</tbody></table></div>`;
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+(async function boot() {
+  const cfgLive = !/PASTE/.test(CONFIG.DB_URL + CONFIG.DB_KEY) && /^https:\/\//.test(CONFIG.DB_URL);
+  const conn = cfgLive ? {url: CONFIG.DB_URL, key: CONFIG.DB_KEY} : lsGet(LS_CONN);
+  try {
+    if (conn && conn.url) { await Store.initLive(conn.url, conn.key); await Auth.restore(); }
+    else { await Store.initDemo(); await Auth.restore(); }
+  } catch (e) {
+    console.warn(e);
+    toast('Database unreachable — running in demo mode. ' + (e.message || ''), 'err');
+    S.sb = null; await Store.initDemo(); await Auth.restore();
+  }
+  render();
+  setInterval(() => { if (D.today() !== TODAY && S.user) render(); }, 60000);
+})();
+</script>
+</body>
+</html>
