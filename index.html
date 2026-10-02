@@ -2113,7 +2113,10 @@ function admAudit(el) {
   const cfgLive = !/PASTE/.test(CONFIG.DB_URL + CONFIG.DB_KEY) && /^https:\/\//.test(CONFIG.DB_URL);
   const conn = cfgLive ? {url: CONFIG.DB_URL, key: CONFIG.DB_KEY} : lsGet(LS_CONN);
   try {
-    if (conn && conn.url) { await Store.initLive(conn.url, conn.key); await Auth.restore(); }
+    if (conn && conn.url) {
+      $('#root').innerHTML = `<div class="auth"><div class="box"><div class="brand"><div class="logo">OT</div><div>OnTrac Attendance<small>Ops · Attendance · PTO · Swaps</small></div></div><h2>Connecting…</h2><div class="row"><span class="pill info"><span class="dot"></span>Database</span><span class="note">Loading secure sign-in</span></div></div></div>`;
+      await Store.initLive(conn.url, conn.key); await Auth.restore();
+    }
     else { await Store.initDemo(); await Auth.restore(); }
   } catch (e) {
     console.warn(e);
